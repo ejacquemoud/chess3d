@@ -9,12 +9,15 @@ namespace Chess3D.Rendering.Wpf.Geometry;
 public static class ChessPieceFactory
 {
     private const double PieceLift = 0.01;
+    private const int DefaultSlices = 44;
+    private const int SphereSlices = 24;
+    private const int SphereStacks = 16;
 
     public static List<GeometryModel3D> CreatePieceModels(PieceType type, PieceColor pieceColor, Point3D baseCenter)
     {
         var color = pieceColor == PieceColor.White
-            ? Color.FromRgb(236, 228, 214)
-            : Color.FromRgb(52, 42, 36);
+            ? Color.FromRgb(238, 232, 220)
+            : Color.FromRgb(58, 44, 34);
 
         var c = new Point3D(baseCenter.X, baseCenter.Y + PieceLift, baseCenter.Z);
 
@@ -30,90 +33,248 @@ public static class ChessPieceFactory
         };
     }
 
-    private static double CenterY(Point3D c, double bottom, double height)
-        => c.Y + bottom + (height / 2.0);
-
     private static List<GeometryModel3D> CreatePawn(Point3D c, Color color)
     {
+        var body = new (double Radius, double Y)[]
+        {
+            (0.00, 0.00),
+            (0.31, 0.02),
+            (0.30, 0.05),
+            (0.25, 0.09),
+            (0.20, 0.12),
+            (0.17, 0.18),
+            (0.13, 0.28),
+            (0.11, 0.39),
+            (0.13, 0.48),
+            (0.16, 0.55),
+            (0.10, 0.60),
+            (0.00, 0.62)
+        };
+
         return new()
         {
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.00, 0.08), c.Z), 0.28, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.08, 0.06), c.Z), 0.20, 0.06, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.14, 0.30), c.Z), 0.11, 0.30, color, 24),
-            CreateSphere(new Point3D(c.X, c.Y + 0.46, c.Z), 0.16, color, 18, 12)
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 0.70, c.Z), 0.11, color, SphereSlices, SphereStacks)
         };
     }
 
     private static List<GeometryModel3D> CreateRook(Point3D c, Color color)
     {
-        return new()
+        var body = new (double Radius, double Y)[]
         {
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.00, 0.08), c.Z), 0.30, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.08, 0.08), c.Z), 0.22, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.16, 0.40), c.Z), 0.16, 0.40, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.56, 0.10), c.Z), 0.22, 0.10, color, 28),
-
-            CreateBox(new Point3D(c.X - 0.13, CenterY(c, 0.66, 0.10), c.Z), 0.08, 0.10, 0.10, color),
-            CreateBox(new Point3D(c.X + 0.13, CenterY(c, 0.66, 0.10), c.Z), 0.08, 0.10, 0.10, color),
-            CreateBox(new Point3D(c.X, CenterY(c, 0.66, 0.10), c.Z - 0.13), 0.10, 0.10, 0.08, color),
-            CreateBox(new Point3D(c.X, CenterY(c, 0.66, 0.10), c.Z + 0.13), 0.10, 0.10, 0.08, color),
+            (0.00, 0.00),
+            (0.33, 0.02),
+            (0.31, 0.06),
+            (0.25, 0.10),
+            (0.21, 0.16),
+            (0.19, 0.30),
+            (0.19, 0.52),
+            (0.21, 0.62),
+            (0.25, 0.69),
+            (0.24, 0.74),
+            (0.00, 0.74)
         };
+
+        var models = new List<GeometryModel3D>
+        {
+            CreateLathedSolid(body, c, color, DefaultSlices)
+        };
+
+        int crenelCount = 6;
+        double crenelRadius = 0.265;
+
+        for (int i = 0; i < crenelCount; i++)
+        {
+            double angle = 2.0 * Math.PI * i / crenelCount;
+            double x = c.X + crenelRadius * Math.Cos(angle);
+            double z = c.Z + crenelRadius * Math.Sin(angle);
+
+            models.Add(CreateBox(
+                new Point3D(x, c.Y + 0.79, z),
+                0.085,
+                0.10,
+                0.10,
+                color));
+        }
+
+        return models;
     }
 
     private static List<GeometryModel3D> CreateKnight(Point3D c, Color color)
     {
-        return new()
+        var models = new List<GeometryModel3D>
         {
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.00, 0.08), c.Z), 0.30, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.08, 0.08), c.Z), 0.22, 0.08, color, 28),
+            CreateLathedSolid(new (double Radius, double Y)[]
+            {
+                (0.00, 0.00),
+                (0.33, 0.02),
+                (0.30, 0.06),
+                (0.23, 0.10),
+                (0.19, 0.17),
+                (0.17, 0.24),
+                (0.16, 0.31),
+                (0.00, 0.33)
+            }, c, color, DefaultSlices),
 
-            CreateBox(new Point3D(c.X, CenterY(c, 0.16, 0.34), c.Z), 0.20, 0.34, 0.26, color),
-            CreateBox(new Point3D(c.X + 0.04, CenterY(c, 0.39, 0.22), c.Z), 0.18, 0.22, 0.22, color),
-            CreateBox(new Point3D(c.X + 0.10, CenterY(c, 0.54, 0.16), c.Z), 0.16, 0.16, 0.18, color),
-            CreateBox(new Point3D(c.X - 0.06, CenterY(c, 0.32, 0.26), c.Z), 0.08, 0.26, 0.18, color)
+            CreateBox(new Point3D(c.X, c.Y + 0.49, c.Z), 0.22, 0.30, 0.27, color),
+            CreateBox(new Point3D(c.X + 0.05, c.Y + 0.65, c.Z), 0.18, 0.20, 0.24, color),
+            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.80, c.Z), 0.14, 0.16, 0.18, color),
+            CreateBox(new Point3D(c.X - 0.03, c.Y + 0.61, c.Z), 0.08, 0.30, 0.18, color),
+            CreateBox(new Point3D(c.X + 0.03, c.Y + 0.92, c.Z), 0.05, 0.12, 0.08, color),
+            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.95, c.Z), 0.04, 0.10, 0.06, color),
+            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.72, c.Z + 0.08), 0.025, 0.025, 0.025, color),
+            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.72, c.Z - 0.08), 0.025, 0.025, 0.025, color)
         };
+
+        return models;
     }
 
     private static List<GeometryModel3D> CreateBishop(Point3D c, Color color)
     {
+        var body = new (double Radius, double Y)[]
+        {
+            (0.00, 0.00),
+            (0.32, 0.02),
+            (0.29, 0.06),
+            (0.22, 0.10),
+            (0.18, 0.18),
+            (0.14, 0.33),
+            (0.12, 0.52),
+            (0.15, 0.64),
+            (0.19, 0.73),
+            (0.12, 0.82),
+            (0.00, 0.84)
+        };
+
         return new()
         {
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.00, 0.08), c.Z), 0.30, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.08, 0.08), c.Z), 0.21, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.16, 0.46), c.Z), 0.12, 0.46, color, 26),
-            CreateSphere(new Point3D(c.X, c.Y + 0.65, c.Z), 0.17, color, 20, 14),
-            CreateBox(new Point3D(c.X, CenterY(c, 0.74, 0.18), c.Z), 0.04, 0.18, 0.22, color)
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 0.86, c.Z), 0.085, color, SphereSlices, SphereStacks),
+            CreateBox(new Point3D(c.X + 0.01, c.Y + 0.76, c.Z), 0.03, 0.20, 0.20, color)
         };
     }
 
     private static List<GeometryModel3D> CreateQueen(Point3D c, Color color)
     {
-        return new()
+        var body = new (double Radius, double Y)[]
         {
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.00, 0.08), c.Z), 0.31, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.08, 0.08), c.Z), 0.23, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.16, 0.50), c.Z), 0.13, 0.50, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.66, 0.08), c.Z), 0.19, 0.08, color, 28),
-            CreateSphere(new Point3D(c.X, c.Y + 0.80, c.Z), 0.14, color, 20, 14),
-
-            CreateSphere(new Point3D(c.X - 0.11, c.Y + 0.72, c.Z), 0.04, color, 12, 8),
-            CreateSphere(new Point3D(c.X + 0.11, c.Y + 0.72, c.Z), 0.04, color, 12, 8),
-            CreateSphere(new Point3D(c.X, c.Y + 0.72, c.Z - 0.11), 0.04, color, 12, 8),
-            CreateSphere(new Point3D(c.X, c.Y + 0.72, c.Z + 0.11), 0.04, color, 12, 8)
+            (0.00, 0.00),
+            (0.34, 0.02),
+            (0.31, 0.06),
+            (0.24, 0.10),
+            (0.19, 0.19),
+            (0.15, 0.34),
+            (0.13, 0.55),
+            (0.16, 0.69),
+            (0.21, 0.77),
+            (0.17, 0.83),
+            (0.00, 0.84)
         };
+
+        var models = new List<GeometryModel3D>
+        {
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 0.95, c.Z), 0.078, color, SphereSlices, SphereStacks)
+        };
+
+        AddCrownBeads(models, c, 0.86, 0.135, 6, 0.038, color);
+
+        return models;
     }
 
     private static List<GeometryModel3D> CreateKing(Point3D c, Color color)
     {
+        var body = new (double Radius, double Y)[]
+        {
+            (0.00, 0.00),
+            (0.34, 0.02),
+            (0.31, 0.06),
+            (0.24, 0.10),
+            (0.19, 0.19),
+            (0.15, 0.36),
+            (0.13, 0.60),
+            (0.16, 0.74),
+            (0.21, 0.82),
+            (0.16, 0.88),
+            (0.00, 0.89)
+        };
+
         return new()
         {
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.00, 0.08), c.Z), 0.31, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.08, 0.08), c.Z), 0.23, 0.08, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.16, 0.56), c.Z), 0.13, 0.56, color, 28),
-            CreateCylinder(new Point3D(c.X, CenterY(c, 0.72, 0.08), c.Z), 0.18, 0.08, color, 28),
-            CreateBox(new Point3D(c.X, CenterY(c, 0.80, 0.20), c.Z), 0.07, 0.20, 0.07, color),
-            CreateBox(new Point3D(c.X, CenterY(c, 0.95, 0.05), c.Z), 0.22, 0.05, 0.05, color)
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateBox(new Point3D(c.X, c.Y + 0.99, c.Z), 0.06, 0.20, 0.06, color),
+            CreateBox(new Point3D(c.X, c.Y + 1.07, c.Z), 0.20, 0.04, 0.04, color)
         };
+    }
+
+    private static void AddCrownBeads(
+        List<GeometryModel3D> models,
+        Point3D c,
+        double y,
+        double radius,
+        int count,
+        double beadRadius,
+        Color color)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            double angle = 2.0 * Math.PI * i / count;
+            double x = c.X + radius * Math.Cos(angle);
+            double z = c.Z + radius * Math.Sin(angle);
+
+            models.Add(CreateSphere(
+                new Point3D(x, c.Y + y, z),
+                beadRadius,
+                color,
+                16,
+                12));
+        }
+    }
+
+    private static GeometryModel3D CreateLathedSolid(
+        IReadOnlyList<(double Radius, double Y)> profile,
+        Point3D origin,
+        Color color,
+        int slices)
+    {
+        var mesh = new MeshGeometry3D();
+
+        for (int i = 0; i < profile.Count; i++)
+        {
+            var (radius, y) = profile[i];
+
+            for (int s = 0; s <= slices; s++)
+            {
+                double angle = 2.0 * Math.PI * s / slices;
+                double x = origin.X + radius * Math.Cos(angle);
+                double z = origin.Z + radius * Math.Sin(angle);
+
+                mesh.Positions.Add(new Point3D(x, origin.Y + y, z));
+            }
+        }
+
+        int ringSize = slices + 1;
+
+        for (int i = 0; i < profile.Count - 1; i++)
+        {
+            for (int s = 0; s < slices; s++)
+            {
+                int a = i * ringSize + s;
+                int b = a + 1;
+                int c = (i + 1) * ringSize + s;
+                int d = c + 1;
+
+                mesh.TriangleIndices.Add(a);
+                mesh.TriangleIndices.Add(c);
+                mesh.TriangleIndices.Add(b);
+
+                mesh.TriangleIndices.Add(b);
+                mesh.TriangleIndices.Add(c);
+                mesh.TriangleIndices.Add(d);
+            }
+        }
+
+        return CreateModel(mesh, color);
     }
 
     private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
@@ -144,55 +305,6 @@ public static class ChessPieceFactory
                 0,1,5, 0,5,4
             }
         };
-
-        return CreateModel(mesh, color);
-    }
-
-    private static GeometryModel3D CreateCylinder(Point3D center, double radius, double height, Color color, int divisions)
-    {
-        var mesh = new MeshGeometry3D();
-
-        double y0 = center.Y - height / 2.0;
-        double y1 = center.Y + height / 2.0;
-
-        mesh.Positions.Add(new Point3D(center.X, y0, center.Z));
-        mesh.Positions.Add(new Point3D(center.X, y1, center.Z));
-
-        for (int i = 0; i < divisions; i++)
-        {
-            double angle = 2.0 * Math.PI * i / divisions;
-            double x = center.X + radius * Math.Cos(angle);
-            double z = center.Z + radius * Math.Sin(angle);
-
-            mesh.Positions.Add(new Point3D(x, y0, z));
-            mesh.Positions.Add(new Point3D(x, y1, z));
-        }
-
-        for (int i = 0; i < divisions; i++)
-        {
-            int next = (i + 1) % divisions;
-
-            int b0 = 2 + i * 2;
-            int t0 = b0 + 1;
-            int b1 = 2 + next * 2;
-            int t1 = b1 + 1;
-
-            mesh.TriangleIndices.Add(b0);
-            mesh.TriangleIndices.Add(t0);
-            mesh.TriangleIndices.Add(t1);
-
-            mesh.TriangleIndices.Add(b0);
-            mesh.TriangleIndices.Add(t1);
-            mesh.TriangleIndices.Add(b1);
-
-            mesh.TriangleIndices.Add(0);
-            mesh.TriangleIndices.Add(b1);
-            mesh.TriangleIndices.Add(b0);
-
-            mesh.TriangleIndices.Add(1);
-            mesh.TriangleIndices.Add(t0);
-            mesh.TriangleIndices.Add(t1);
-        }
 
         return CreateModel(mesh, color);
     }
@@ -237,16 +349,20 @@ public static class ChessPieceFactory
         return CreateModel(mesh, color);
     }
 
-    private static GeometryModel3D CreateModel(MeshGeometry3D mesh, Color color)
+    private static GeometryModel3D CreateModel(MeshGeometry3D mesh, Color baseColor)
     {
-        var diffuse = new DiffuseMaterial(new SolidColorBrush(color));
-        var specular = new SpecularMaterial(
-            new SolidColorBrush(Color.FromArgb(140, 255, 255, 255)),
-            60);
-
         var materialGroup = new MaterialGroup();
+
+        var diffuse = new DiffuseMaterial(new SolidColorBrush(baseColor));
+        var specular = new SpecularMaterial(
+            new SolidColorBrush(Color.FromArgb(185, 255, 255, 255)),
+            80);
+        var emissive = new EmissiveMaterial(
+            new SolidColorBrush(Color.FromArgb(18, 255, 244, 230)));
+
         materialGroup.Children.Add(diffuse);
         materialGroup.Children.Add(specular);
+        materialGroup.Children.Add(emissive);
 
         return new GeometryModel3D
         {

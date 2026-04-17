@@ -1,223 +1,300 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Chess3D.Core.Enums;
 
-namespace Chess3D.Core.Models
+namespace Chess3D.Core.Models;
+
+public enum GameEndState
 {
-    public sealed class BoardState
+    None = 0,
+    Check,
+    Checkmate,
+    Stalemate
+}
+
+public sealed class BoardState
+{
+    private readonly Piece?[,] _board = new Piece?[8, 8];
+
+    public PieceColor SideToMove { get; private set; } = PieceColor.White;
+
+    public Piece? GetPiece(Square square) => _board[square.File, square.Rank];
+
+    public void SetPiece(Square square, Piece? piece) => _board[square.File, square.Rank] = piece;
+
+    public Piece?[,] Snapshot()
     {
-        private readonly Piece?[,] _board = new Piece?[8, 8];
+        var copy = new Piece?[8, 8];
+        Array.Copy(_board, copy, _board.Length);
+        return copy;
+    }
 
-        public PieceColor SideToMove { get; private set; } = PieceColor.White;
-
-        public Piece? GetPiece(Square square) => _board[square.File, square.Rank];
-
-        public void SetPiece(Square square, Piece? piece) => _board[square.File, square.Rank] = piece;
-
-        public Piece?[,] Snapshot()
+    public IEnumerable<(Square Square, Piece Piece)> GetOccupiedSquares()
+    {
+        for (int file = 0; file < 8; file++)
         {
-            var copy = new Piece?[8, 8];
-            System.Array.Copy(_board, copy, _board.Length);
-            return copy;
-        }
-
-        public IEnumerable<(Square Square, Piece Piece)> GetOccupiedSquares()
-        {
-            for (int file = 0; file < 8; file++)
+            for (int rank = 0; rank < 8; rank++)
             {
-                for (int rank = 0; rank < 8; rank++)
-                {
-                    var piece = _board[file, rank];
-                    if (piece != null)
-                        yield return (new Square(file, rank), piece);
-                }
+                var piece = _board[file, rank];
+                if (piece != null)
+                    yield return (new Square(file, rank), piece);
             }
         }
+    }
 
-        public IReadOnlyList<Move> GeneratePseudoLegalMovesFor(Square from)
-        {
-            var moves = new List<Move>();
-            var piece = GetPiece(from);
+    public IReadOnlyList<Move> GeneratePseudoLegalMovesFor(Square from)
+    {
+        var moves = new List<Move>();
+        var piece = GetPiece(from);
 
-            if (piece == null)
-                return moves;
-
-            if (piece.Color != SideToMove)
-                return moves;
-
-            switch (piece.Type)
-            {
-                case PieceType.Pawn:
-                    AddPawnMoves(moves, from, piece);
-                    break;
-
-                case PieceType.Rook:
-                    AddRookMoves(moves, from, piece.Color);
-                    break;
-
-                case PieceType.Knight:
-                    AddKnightMoves(moves, from, piece.Color);
-                    break;
-
-                case PieceType.Bishop:
-                    AddBishopMoves(moves, from, piece.Color);
-                    break;
-
-                case PieceType.Queen:
-                    AddQueenMoves(moves, from, piece.Color);
-                    break;
-
-                case PieceType.King:
-                    AddKingMoves(moves, from, piece.Color);
-                    break;
-            }
-
+        if (piece == null)
             return moves;
-        }
 
-        public void MakeMove(Move move)
+        if (piece.Color != SideToMove)
+            return moves;
+
+        switch (piece.Type)
         {
-            var piece = GetPiece(move.From);
-            if (piece == null)
-                return;
+            case PieceType.Pawn:
+                AddPawnMoves(moves, from, piece);
+                break;
 
-            if (piece.Type == PieceType.Pawn)
-            {
-                bool reachesLastRank =
-                    (piece.Color == PieceColor.White && move.To.Rank == 7) ||
-                    (piece.Color == PieceColor.Black && move.To.Rank == 0);
+            case PieceType.Rook:
+                AddRookMoves(moves, from, piece.Color);
+                break;
 
-                if (reachesLastRank && move.Promotion != PieceType.None)
-                {
-                    SetPiece(move.To, new Piece(move.Promotion, piece.Color));
-                    SetPiece(move.From, null);
-                    ToggleSideToMove();
-                    return;
-                }
-            }
+            case PieceType.Knight:
+                AddKnightMoves(moves, from, piece.Color);
+                break;
 
-            SetPiece(move.To, piece);
-            SetPiece(move.From, null);
-            ToggleSideToMove();
+            case PieceType.Bishop:
+                AddBishopMoves(moves, from, piece.Color);
+                break;
+
+            case PieceType.Queen:
+                AddQueenMoves(moves, from, piece.Color);
+                break;
+
+            case PieceType.King:
+                AddKingMoves(moves, from, piece.Color);
+                break;
         }
 
-        private void ToggleSideToMove()
+        return moves;
+    }
+
+    public IReadOnlyList<Move> GenerateLegalMovesFor(Square from)
+    {
+        var pseudoMoves = GeneratePseudoLegalMovesFor(from);
+        var legalMoves = new List<Move>();
+
+        foreach (var move in pseudoMoves)
         {
-            SideToMove = SideToMove == PieceColor.White
-                ? PieceColor.Black
-                : PieceColor.White;
+            var clone = Clone();
+            clone.MakeMoveInternal(move);
+
+            var movingPiece = GetPiece(from);
+            if (movingPiece == null)
+                continue;
+
+            if (!clone.IsKingInCheck(movingPiece.Color))
+                legalMoves.Add(move);
         }
 
-        private void AddPawnMoves(List<Move> moves, Square from, Piece piece)
-        {
-            int direction = piece.Color == PieceColor.White ? 1 : -1;
-            int startRank = piece.Color == PieceColor.White ? 1 : 6;
+        return legalMoves;
+    }
 
-            var oneForward = new Square(from.File, from.Rank + direction);
-            if (IsInside(oneForward) && GetPiece(oneForward) == null)
-            {
-                AddPawnAdvanceMove(moves, from, oneForward, piece.Color);
+    public GameEndState GetGameEndState()
+    {
+        bool inCheck = IsKingInCheck(SideToMove);
+        bool hasAnyLegalMove = HasAnyLegalMove(SideToMove);
 
-                var twoForward = new Square(from.File, from.Rank + 2 * direction);
-                if (from.Rank == startRank && IsInside(twoForward) && GetPiece(twoForward) == null)
-                {
-                    moves.Add(new Move
-                    {
-                        From = from,
-                        To = twoForward
-                    });
-                }
-            }
+        if (inCheck && !hasAnyLegalMove)
+            return GameEndState.Checkmate;
 
-            var captureLeft = new Square(from.File - 1, from.Rank + direction);
-            var captureRight = new Square(from.File + 1, from.Rank + direction);
+        if (!inCheck && !hasAnyLegalMove)
+            return GameEndState.Stalemate;
 
-            AddPawnCaptureIfEnemy(moves, from, captureLeft, piece.Color);
-            AddPawnCaptureIfEnemy(moves, from, captureRight, piece.Color);
-        }
+        if (inCheck)
+            return GameEndState.Check;
 
-        private void AddPawnAdvanceMove(List<Move> moves, Square from, Square to, PieceColor color)
+        return GameEndState.None;
+    }
+
+    public void MakeMove(Move move)
+    {
+        MakeMoveInternal(move);
+        ToggleSideToMove();
+    }
+
+    private void MakeMoveInternal(Move move)
+    {
+        var piece = GetPiece(move.From);
+        if (piece == null)
+            return;
+
+        if (piece.Type == PieceType.Pawn)
         {
             bool reachesLastRank =
-                (color == PieceColor.White && to.Rank == 7) ||
-                (color == PieceColor.Black && to.Rank == 0);
+                (piece.Color == PieceColor.White && move.To.Rank == 7) ||
+                (piece.Color == PieceColor.Black && move.To.Rank == 0);
 
-            if (reachesLastRank)
+            if (reachesLastRank && move.Promotion != PieceType.None)
             {
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Queen });
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Rook });
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Bishop });
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Knight });
-            }
-            else
-            {
-                moves.Add(new Move { From = from, To = to });
+                SetPiece(move.To, new Piece(move.Promotion, piece.Color));
+                SetPiece(move.From, null);
+                return;
             }
         }
 
-        private void AddPawnCaptureIfEnemy(List<Move> moves, Square from, Square to, PieceColor ownColor)
+        SetPiece(move.To, piece);
+        SetPiece(move.From, null);
+    }
+
+    private void ToggleSideToMove()
+    {
+        SideToMove = SideToMove == PieceColor.White
+            ? PieceColor.Black
+            : PieceColor.White;
+    }
+
+    private void AddPawnMoves(List<Move> moves, Square from, Piece piece)
+    {
+        int direction = piece.Color == PieceColor.White ? 1 : -1;
+        int startRank = piece.Color == PieceColor.White ? 1 : 6;
+
+        var oneForward = new Square(from.File, from.Rank + direction);
+        if (IsInside(oneForward) && GetPiece(oneForward) == null)
         {
+            AddPawnAdvanceMove(moves, from, oneForward, piece.Color);
+
+            var twoForward = new Square(from.File, from.Rank + 2 * direction);
+            if (from.Rank == startRank && IsInside(twoForward) && GetPiece(twoForward) == null)
+            {
+                moves.Add(new Move
+                {
+                    From = from,
+                    To = twoForward
+                });
+            }
+        }
+
+        var captureLeft = new Square(from.File - 1, from.Rank + direction);
+        var captureRight = new Square(from.File + 1, from.Rank + direction);
+
+        AddPawnCaptureIfEnemy(moves, from, captureLeft, piece.Color);
+        AddPawnCaptureIfEnemy(moves, from, captureRight, piece.Color);
+    }
+
+    private void AddPawnAdvanceMove(List<Move> moves, Square from, Square to, PieceColor color)
+    {
+        bool reachesLastRank =
+            (color == PieceColor.White && to.Rank == 7) ||
+            (color == PieceColor.Black && to.Rank == 0);
+
+        if (reachesLastRank)
+        {
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Queen });
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Rook });
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Bishop });
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Knight });
+        }
+        else
+        {
+            moves.Add(new Move { From = from, To = to });
+        }
+    }
+
+    private void AddPawnCaptureIfEnemy(List<Move> moves, Square from, Square to, PieceColor ownColor)
+    {
+        if (!IsInside(to))
+            return;
+
+        var target = GetPiece(to);
+        if (target == null || target.Color == ownColor)
+            return;
+
+        bool reachesLastRank =
+            (ownColor == PieceColor.White && to.Rank == 7) ||
+            (ownColor == PieceColor.Black && to.Rank == 0);
+
+        if (reachesLastRank)
+        {
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Queen });
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Rook });
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Bishop });
+            moves.Add(new Move { From = from, To = to, Promotion = PieceType.Knight });
+        }
+        else
+        {
+            moves.Add(new Move { From = from, To = to });
+        }
+    }
+
+    private void AddRookMoves(List<Move> moves, Square from, PieceColor ownColor)
+    {
+        AddRayMoves(moves, from, ownColor, 1, 0);
+        AddRayMoves(moves, from, ownColor, -1, 0);
+        AddRayMoves(moves, from, ownColor, 0, 1);
+        AddRayMoves(moves, from, ownColor, 0, -1);
+    }
+
+    private void AddBishopMoves(List<Move> moves, Square from, PieceColor ownColor)
+    {
+        AddRayMoves(moves, from, ownColor, 1, 1);
+        AddRayMoves(moves, from, ownColor, 1, -1);
+        AddRayMoves(moves, from, ownColor, -1, 1);
+        AddRayMoves(moves, from, ownColor, -1, -1);
+    }
+
+    private void AddQueenMoves(List<Move> moves, Square from, PieceColor ownColor)
+    {
+        AddRookMoves(moves, from, ownColor);
+        AddBishopMoves(moves, from, ownColor);
+    }
+
+    private void AddKnightMoves(List<Move> moves, Square from, PieceColor ownColor)
+    {
+        var offsets = new (int df, int dr)[]
+        {
+            ( 1,  2),
+            ( 2,  1),
+            ( 2, -1),
+            ( 1, -2),
+            (-1, -2),
+            (-2, -1),
+            (-2,  1),
+            (-1,  2)
+        };
+
+        foreach (var (df, dr) in offsets)
+        {
+            var to = new Square(from.File + df, from.Rank + dr);
             if (!IsInside(to))
-                return;
+                continue;
 
             var target = GetPiece(to);
-            if (target == null || target.Color == ownColor)
-                return;
-
-            bool reachesLastRank =
-                (ownColor == PieceColor.White && to.Rank == 7) ||
-                (ownColor == PieceColor.Black && to.Rank == 0);
-
-            if (reachesLastRank)
+            if (target == null || target.Color != ownColor)
             {
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Queen });
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Rook });
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Bishop });
-                moves.Add(new Move { From = from, To = to, Promotion = PieceType.Knight });
-            }
-            else
-            {
-                moves.Add(new Move { From = from, To = to });
+                moves.Add(new Move
+                {
+                    From = from,
+                    To = to
+                });
             }
         }
+    }
 
-        private void AddRookMoves(List<Move> moves, Square from, PieceColor ownColor)
+    private void AddKingMoves(List<Move> moves, Square from, PieceColor ownColor)
+    {
+        for (int df = -1; df <= 1; df++)
         {
-            AddRayMoves(moves, from, ownColor, 1, 0);
-            AddRayMoves(moves, from, ownColor, -1, 0);
-            AddRayMoves(moves, from, ownColor, 0, 1);
-            AddRayMoves(moves, from, ownColor, 0, -1);
-        }
-
-        private void AddBishopMoves(List<Move> moves, Square from, PieceColor ownColor)
-        {
-            AddRayMoves(moves, from, ownColor, 1, 1);
-            AddRayMoves(moves, from, ownColor, 1, -1);
-            AddRayMoves(moves, from, ownColor, -1, 1);
-            AddRayMoves(moves, from, ownColor, -1, -1);
-        }
-
-        private void AddQueenMoves(List<Move> moves, Square from, PieceColor ownColor)
-        {
-            AddRookMoves(moves, from, ownColor);
-            AddBishopMoves(moves, from, ownColor);
-        }
-
-        private void AddKnightMoves(List<Move> moves, Square from, PieceColor ownColor)
-        {
-            var offsets = new (int df, int dr)[]
+            for (int dr = -1; dr <= 1; dr++)
             {
-                ( 1,  2),
-                ( 2,  1),
-                ( 2, -1),
-                ( 1, -2),
-                (-1, -2),
-                (-2, -1),
-                (-2,  1),
-                (-1,  2)
-            };
+                if (df == 0 && dr == 0)
+                    continue;
 
-            foreach (var (df, dr) in offsets)
-            {
                 var to = new Square(from.File + df, from.Rank + dr);
                 if (!IsInside(to))
                     continue;
@@ -233,44 +310,29 @@ namespace Chess3D.Core.Models
                 }
             }
         }
+    }
 
-        private void AddKingMoves(List<Move> moves, Square from, PieceColor ownColor)
+    private void AddRayMoves(List<Move> moves, Square from, PieceColor ownColor, int df, int dr)
+    {
+        int file = from.File + df;
+        int rank = from.Rank + dr;
+
+        while (file >= 0 && file < 8 && rank >= 0 && rank < 8)
         {
-            for (int df = -1; df <= 1; df++)
+            var to = new Square(file, rank);
+            var target = GetPiece(to);
+
+            if (target == null)
             {
-                for (int dr = -1; dr <= 1; dr++)
+                moves.Add(new Move
                 {
-                    if (df == 0 && dr == 0)
-                        continue;
-
-                    var to = new Square(from.File + df, from.Rank + dr);
-                    if (!IsInside(to))
-                        continue;
-
-                    var target = GetPiece(to);
-                    if (target == null || target.Color != ownColor)
-                    {
-                        moves.Add(new Move
-                        {
-                            From = from,
-                            To = to
-                        });
-                    }
-                }
+                    From = from,
+                    To = to
+                });
             }
-        }
-
-        private void AddRayMoves(List<Move> moves, Square from, PieceColor ownColor, int df, int dr)
-        {
-            int file = from.File + df;
-            int rank = from.Rank + dr;
-
-            while (file >= 0 && file < 8 && rank >= 0 && rank < 8)
+            else
             {
-                var to = new Square(file, rank);
-                var target = GetPiece(to);
-
-                if (target == null)
+                if (target.Color != ownColor)
                 {
                     moves.Add(new Move
                     {
@@ -278,57 +340,174 @@ namespace Chess3D.Core.Models
                         To = to
                     });
                 }
-                else
-                {
-                    if (target.Color != ownColor)
-                    {
-                        moves.Add(new Move
-                        {
-                            From = from,
-                            To = to
-                        });
-                    }
 
-                    break;
-                }
+                break;
+            }
 
-                file += df;
-                rank += dr;
+            file += df;
+            rank += dr;
+        }
+    }
+
+    private bool HasAnyLegalMove(PieceColor color)
+    {
+        if (color != SideToMove)
+        {
+            var clone = Clone();
+            clone.SideToMove = color;
+            return clone.HasAnyLegalMoveForCurrentSide();
+        }
+
+        return HasAnyLegalMoveForCurrentSide();
+    }
+
+    private bool HasAnyLegalMoveForCurrentSide()
+    {
+        foreach (var (square, piece) in GetOccupiedSquares())
+        {
+            if (piece.Color != SideToMove)
+                continue;
+
+            if (GenerateLegalMovesFor(square).Count > 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    public bool IsKingInCheck(PieceColor color)
+    {
+        Square? kingSquare = null;
+
+        foreach (var (square, piece) in GetOccupiedSquares())
+        {
+            if (piece.Color == color && piece.Type == PieceType.King)
+            {
+                kingSquare = square;
+                break;
             }
         }
 
-        private static bool IsInside(Square square)
-            => square.File >= 0 && square.File < 8 && square.Rank >= 0 && square.Rank < 8;
+        if (kingSquare == null)
+            return false;
 
-        public static BoardState CreateInitial()
+        PieceColor enemyColor = color == PieceColor.White ? PieceColor.Black : PieceColor.White;
+
+        foreach (var (square, piece) in GetOccupiedSquares())
         {
-            var board = new BoardState();
+            if (piece.Color != enemyColor)
+                continue;
 
-            board.SetPiece(new Square(0, 0), new Piece(PieceType.Rook, PieceColor.White));
-            board.SetPiece(new Square(1, 0), new Piece(PieceType.Knight, PieceColor.White));
-            board.SetPiece(new Square(2, 0), new Piece(PieceType.Bishop, PieceColor.White));
-            board.SetPiece(new Square(3, 0), new Piece(PieceType.Queen, PieceColor.White));
-            board.SetPiece(new Square(4, 0), new Piece(PieceType.King, PieceColor.White));
-            board.SetPiece(new Square(5, 0), new Piece(PieceType.Bishop, PieceColor.White));
-            board.SetPiece(new Square(6, 0), new Piece(PieceType.Knight, PieceColor.White));
-            board.SetPiece(new Square(7, 0), new Piece(PieceType.Rook, PieceColor.White));
-
-            for (int file = 0; file < 8; file++)
-                board.SetPiece(new Square(file, 1), new Piece(PieceType.Pawn, PieceColor.White));
-
-            board.SetPiece(new Square(0, 7), new Piece(PieceType.Rook, PieceColor.Black));
-            board.SetPiece(new Square(1, 7), new Piece(PieceType.Knight, PieceColor.Black));
-            board.SetPiece(new Square(2, 7), new Piece(PieceType.Bishop, PieceColor.Black));
-            board.SetPiece(new Square(3, 7), new Piece(PieceType.Queen, PieceColor.Black));
-            board.SetPiece(new Square(4, 7), new Piece(PieceType.King, PieceColor.Black));
-            board.SetPiece(new Square(5, 7), new Piece(PieceType.Bishop, PieceColor.Black));
-            board.SetPiece(new Square(6, 7), new Piece(PieceType.Knight, PieceColor.Black));
-            board.SetPiece(new Square(7, 7), new Piece(PieceType.Rook, PieceColor.Black));
-
-            for (int file = 0; file < 8; file++)
-                board.SetPiece(new Square(file, 6), new Piece(PieceType.Pawn, PieceColor.Black));
-
-            return board;
+            foreach (var move in GeneratePseudoLegalMovesIgnoringTurn(square, piece))
+            {
+                if (move.To == kingSquare.Value)
+                    return true;
+            }
         }
+
+        return false;
+    }
+
+    private IReadOnlyList<Move> GeneratePseudoLegalMovesIgnoringTurn(Square from, Piece piece)
+    {
+        var moves = new List<Move>();
+
+        switch (piece.Type)
+        {
+            case PieceType.Pawn:
+                AddPawnAttackMovesOnly(moves, from, piece.Color);
+                break;
+
+            case PieceType.Rook:
+                AddRookMoves(moves, from, piece.Color);
+                break;
+
+            case PieceType.Knight:
+                AddKnightMoves(moves, from, piece.Color);
+                break;
+
+            case PieceType.Bishop:
+                AddBishopMoves(moves, from, piece.Color);
+                break;
+
+            case PieceType.Queen:
+                AddQueenMoves(moves, from, piece.Color);
+                break;
+
+            case PieceType.King:
+                AddKingMoves(moves, from, piece.Color);
+                break;
+        }
+
+        return moves;
+    }
+
+    private void AddPawnAttackMovesOnly(List<Move> moves, Square from, PieceColor color)
+    {
+        int direction = color == PieceColor.White ? 1 : -1;
+
+        var left = new Square(from.File - 1, from.Rank + direction);
+        var right = new Square(from.File + 1, from.Rank + direction);
+
+        if (IsInside(left))
+            moves.Add(new Move { From = from, To = left });
+
+        if (IsInside(right))
+            moves.Add(new Move { From = from, To = right });
+    }
+
+    private BoardState Clone()
+    {
+        var clone = new BoardState
+        {
+            SideToMove = SideToMove
+        };
+
+        for (int file = 0; file < 8; file++)
+        {
+            for (int rank = 0; rank < 8; rank++)
+            {
+                var piece = _board[file, rank];
+                clone._board[file, rank] = piece == null
+                    ? null
+                    : new Piece(piece.Type, piece.Color);
+            }
+        }
+
+        return clone;
+    }
+
+    private static bool IsInside(Square square)
+        => square.File >= 0 && square.File < 8 && square.Rank >= 0 && square.Rank < 8;
+
+    public static BoardState CreateInitial()
+    {
+        var board = new BoardState();
+
+        board.SetPiece(new Square(0, 0), new Piece(PieceType.Rook, PieceColor.White));
+        board.SetPiece(new Square(1, 0), new Piece(PieceType.Knight, PieceColor.White));
+        board.SetPiece(new Square(2, 0), new Piece(PieceType.Bishop, PieceColor.White));
+        board.SetPiece(new Square(3, 0), new Piece(PieceType.Queen, PieceColor.White));
+        board.SetPiece(new Square(4, 0), new Piece(PieceType.King, PieceColor.White));
+        board.SetPiece(new Square(5, 0), new Piece(PieceType.Bishop, PieceColor.White));
+        board.SetPiece(new Square(6, 0), new Piece(PieceType.Knight, PieceColor.White));
+        board.SetPiece(new Square(7, 0), new Piece(PieceType.Rook, PieceColor.White));
+
+        for (int file = 0; file < 8; file++)
+            board.SetPiece(new Square(file, 1), new Piece(PieceType.Pawn, PieceColor.White));
+
+        board.SetPiece(new Square(0, 7), new Piece(PieceType.Rook, PieceColor.Black));
+        board.SetPiece(new Square(1, 7), new Piece(PieceType.Knight, PieceColor.Black));
+        board.SetPiece(new Square(2, 7), new Piece(PieceType.Bishop, PieceColor.Black));
+        board.SetPiece(new Square(3, 7), new Piece(PieceType.Queen, PieceColor.Black));
+        board.SetPiece(new Square(4, 7), new Piece(PieceType.King, PieceColor.Black));
+        board.SetPiece(new Square(5, 7), new Piece(PieceType.Bishop, PieceColor.Black));
+        board.SetPiece(new Square(6, 7), new Piece(PieceType.Knight, PieceColor.Black));
+        board.SetPiece(new Square(7, 7), new Piece(PieceType.Rook, PieceColor.Black));
+
+        for (int file = 0; file < 8; file++)
+            board.SetPiece(new Square(file, 6), new Piece(PieceType.Pawn, PieceColor.Black));
+
+        return board;
     }
 }

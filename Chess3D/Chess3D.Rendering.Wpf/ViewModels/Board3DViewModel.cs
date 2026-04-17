@@ -42,20 +42,48 @@ public sealed class Board3DViewModel
     {
         var group = new Model3DGroup();
 
-        group.Children.Add(new AmbientLight(Color.FromRgb(160, 160, 160)));
-        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -2, -1)));
-        group.Children.Add(new DirectionalLight(Color.FromRgb(180, 180, 180), new Vector3D(1, -1, 1)));
+        AddLights(group);
+        AddBoard(group);
 
+        return group;
+    }
+
+    private void AddLights(Model3DGroup group)
+    {
+        group.Children.Add(new AmbientLight(Color.FromRgb(55, 58, 64)));
+
+        group.Children.Add(new DirectionalLight(
+            Color.FromRgb(235, 220, 198),
+            new Vector3D(-0.70, -1.00, -0.45)));
+
+        group.Children.Add(new DirectionalLight(
+            Color.FromRgb(112, 122, 150),
+            new Vector3D(0.55, -0.45, 0.65)));
+
+        group.Children.Add(new DirectionalLight(
+            Color.FromRgb(75, 72, 82),
+            new Vector3D(0.20, 0.15, -1.00)));
+    }
+
+    private void AddBoard(Model3DGroup group)
+    {
         var darkSquare = Color.FromRgb(181, 136, 99);
         var lightSquare = Color.FromRgb(240, 217, 181);
-        var boardBase = Color.FromRgb(70, 45, 30);
+        var boardBase = Color.FromRgb(74, 49, 33);
 
         group.Children.Add(CreateBox(
             new Point3D(0, -0.25, 0),
-            8.8,
-            0.5,
-            8.8,
+            8.9,
+            0.50,
+            8.9,
             boardBase));
+
+        group.Children.Add(CreateBox(
+            new Point3D(0, -0.03, 0),
+            8.25,
+            0.06,
+            8.25,
+            Color.FromRgb(92, 63, 42)));
 
         for (int rank = 0; rank < 8; rank++)
         {
@@ -73,8 +101,6 @@ public sealed class Board3DViewModel
                     isLight ? lightSquare : darkSquare));
             }
         }
-
-        return group;
     }
 
     public void RefreshPiecesFromBoardState()
@@ -135,7 +161,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(piece.File, piece.Rank);
-        var moves = _boardState.GeneratePseudoLegalMovesFor(from);
+        var moves = _boardState.GenerateLegalMovesFor(from);
 
         if (moves.Count == 0)
             return false;
@@ -167,12 +193,12 @@ public sealed class Board3DViewModel
             CurrentMoves.Add(move);
 
             var center = GetSquareCenter(move.file, move.rank);
-            var highlight = CreateBox(
-                new Point3D(center.X, BoardTopY + TileHeight + 0.015, center.Z),
-                0.55,
-                0.02,
-                0.55,
-                Color.FromArgb(180, 80, 255, 120));
+            var highlight = CreateHighlightPlate(
+                new Point3D(center.X, BoardTopY + TileHeight + 0.012, center.Z),
+                0.54,
+                0.018,
+                0.54,
+                Color.FromArgb(170, 92, 230, 130));
 
             _moveHighlights.Add(highlight);
             Scene.Children.Add(highlight);
@@ -189,12 +215,12 @@ public sealed class Board3DViewModel
 
         var center = GetSquareCenter(file, rank);
 
-        _selectionHighlight = CreateBox(
-            new Point3D(center.X, BoardTopY + TileHeight + 0.02, center.Z),
+        _selectionHighlight = CreateHighlightPlate(
+            new Point3D(center.X, BoardTopY + TileHeight + 0.018, center.Z),
             0.92,
-            0.03,
+            0.028,
             0.92,
-            Color.FromArgb(180, 80, 180, 255));
+            Color.FromArgb(165, 80, 170, 255));
 
         Scene.Children.Add(_selectionHighlight);
     }
@@ -279,25 +305,25 @@ public sealed class Board3DViewModel
             translate.OffsetZ = 0;
         }
 
-        var duration = TimeSpan.FromMilliseconds(220);
+        var duration = TimeSpan.FromMilliseconds(240);
 
         var animX = new DoubleAnimation
         {
             From = 0,
             To = deltaX,
             Duration = duration,
-            AccelerationRatio = 0.2,
-            DecelerationRatio = 0.8
+            AccelerationRatio = 0.18,
+            DecelerationRatio = 0.82
         };
 
         var animY = new DoubleAnimation
         {
             From = 0,
             To = 0.20,
-            Duration = TimeSpan.FromMilliseconds(110),
+            Duration = TimeSpan.FromMilliseconds(120),
             AutoReverse = true,
-            AccelerationRatio = 0.3,
-            DecelerationRatio = 0.7
+            AccelerationRatio = 0.30,
+            DecelerationRatio = 0.70
         };
 
         var animZ = new DoubleAnimation
@@ -305,8 +331,8 @@ public sealed class Board3DViewModel
             From = 0,
             To = deltaZ,
             Duration = duration,
-            AccelerationRatio = 0.2,
-            DecelerationRatio = 0.8
+            AccelerationRatio = 0.18,
+            DecelerationRatio = 0.82
         };
 
         int completedCount = 0;
@@ -351,7 +377,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
-        var moves = _boardState.GeneratePseudoLegalMovesFor(from);
+        var moves = _boardState.GenerateLegalMovesFor(from);
 
         var matchingMoves = moves
             .Where(m => m.To.File == file && m.To.Rank == rank)
@@ -376,7 +402,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
-        var moves = _boardState.GeneratePseudoLegalMovesFor(from);
+        var moves = _boardState.GenerateLegalMovesFor(from);
 
         var selectedMove = moves.FirstOrDefault(m =>
             m.To.File == file &&
@@ -398,7 +424,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
-        var moves = _boardState.GeneratePseudoLegalMovesFor(from);
+        var moves = _boardState.GenerateLegalMovesFor(from);
 
         var selectedMove = moves.FirstOrDefault(m =>
             m.To.File == file &&
@@ -431,7 +457,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
-        var moves = _boardState.GeneratePseudoLegalMovesFor(from);
+        var moves = _boardState.GenerateLegalMovesFor(from);
 
         var selectedMove = moves.FirstOrDefault(m =>
             m.To.File == file &&
@@ -464,7 +490,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
-        var moves = _boardState.GeneratePseudoLegalMovesFor(from);
+        var moves = _boardState.GenerateLegalMovesFor(from);
 
         return moves.Any(m =>
             m.To.File == file &&
@@ -490,7 +516,12 @@ public sealed class Board3DViewModel
         _ => throw new ArgumentOutOfRangeException(nameof(color), color, null)
     };
 
-    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
+    private static GeometryModel3D CreateHighlightPlate(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
+    {
+        return CreateBox(center, sizeX, sizeY, sizeZ, color, 55);
+    }
+
+    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color, byte specularAlpha = 95)
     {
         double hx = sizeX / 2.0;
         double hy = sizeY / 2.0;
@@ -519,13 +550,17 @@ public sealed class Board3DViewModel
             }
         };
 
-        var material = new DiffuseMaterial(new SolidColorBrush(color));
+        var materials = new MaterialGroup();
+        materials.Children.Add(new DiffuseMaterial(new SolidColorBrush(color)));
+        materials.Children.Add(new SpecularMaterial(
+            new SolidColorBrush(Color.FromArgb(specularAlpha, 255, 255, 255)),
+            45));
 
         return new GeometryModel3D
         {
             Geometry = mesh,
-            Material = material,
-            BackMaterial = material
+            Material = materials,
+            BackMaterial = materials
         };
     }
 }
