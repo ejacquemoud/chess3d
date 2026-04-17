@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Chess.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Chess.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Chess3D.Core\Chess3D.Core.csproj" />
+    <ProjectReference Include="..\Chess3D.Engine.Stockfish\Chess3D.Engine.Stockfish.csproj" />
+    <ProjectReference Include="..\Chess3D.Rendering.Wpf\Chess3D.Rendering.Wpf.csproj" />
+  </ItemGroup>
+</Project>
