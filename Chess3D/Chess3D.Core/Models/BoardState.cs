@@ -480,6 +480,65 @@ public sealed class BoardState
     private static bool IsInside(Square square)
         => square.File >= 0 && square.File < 8 && square.Rank >= 0 && square.Rank < 8;
 
+    public string ToFen()
+    {
+        var fen = new System.Text.StringBuilder();
+
+        for (int rank = 7; rank >= 0; rank--)
+        {
+            int emptyCount = 0;
+
+            for (int file = 0; file < 8; file++)
+            {
+                var piece = _board[file, rank];
+
+                if (piece == null)
+                {
+                    emptyCount++;
+                    continue;
+                }
+
+                if (emptyCount > 0)
+                {
+                    fen.Append(emptyCount);
+                    emptyCount = 0;
+                }
+
+                fen.Append(GetFenPieceChar(piece));
+            }
+
+            if (emptyCount > 0)
+                fen.Append(emptyCount);
+
+            if (rank > 0)
+                fen.Append('/');
+        }
+
+        fen.Append(' ');
+        fen.Append(SideToMove == PieceColor.White ? 'w' : 'b');
+        fen.Append(" - - 0 1");
+
+        return fen.ToString();
+    }
+
+    private static char GetFenPieceChar(Piece piece)
+    {
+        char c = piece.Type switch
+        {
+            PieceType.Pawn => 'p',
+            PieceType.Knight => 'n',
+            PieceType.Bishop => 'b',
+            PieceType.Rook => 'r',
+            PieceType.Queen => 'q',
+            PieceType.King => 'k',
+            _ => throw new ArgumentOutOfRangeException(nameof(piece.Type), piece.Type, null)
+        };
+
+        return piece.Color == PieceColor.White
+            ? char.ToUpperInvariant(c)
+            : c;
+    }
+
     public static BoardState CreateInitial()
     {
         var board = new BoardState();

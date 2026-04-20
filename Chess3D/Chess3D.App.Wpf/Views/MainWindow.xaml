@@ -131,8 +131,10 @@
     <DockPanel Background="{StaticResource WindowBackgroundBrush}">
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_Menu">
-                <MenuItem Header="_Nouvelle partie" Click="NewGame_Click" />
-                <MenuItem Header="_Quitter" Click="Quit_Click" />
+                <MenuItem Header="_Nouvelle partie"
+                          Click="NewGame_Click" />
+                <MenuItem Header="_Quitter"
+                          Click="Quit_Click" />
             </MenuItem>
 
             <MenuItem Header="_Mode">
@@ -157,6 +159,22 @@
                           Header="Je joue les _Noirs"
                           IsCheckable="True"
                           Click="PlayBlackMenuItem_Click" />
+            </MenuItem>
+
+            <MenuItem Header="_Niveau CPU">
+                <MenuItem x:Name="CpuLevel1MenuItem"
+                          Header="_Niveau 1"
+                          IsCheckable="True"
+                          IsChecked="True"
+                          Click="CpuLevel1MenuItem_Click" />
+                <MenuItem x:Name="CpuLevel2MenuItem"
+                          Header="Niveau _2"
+                          IsCheckable="True"
+                          Click="CpuLevel2MenuItem_Click" />
+                <MenuItem x:Name="CpuLevel3MenuItem"
+                          Header="Niveau _3"
+                          IsCheckable="True"
+                          Click="CpuLevel3MenuItem_Click" />
             </MenuItem>
         </Menu>
 

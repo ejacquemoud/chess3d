@@ -1,14 +1,21 @@
-using System;
+Ôªøusing System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Media3D;
+using System.Windows.Threading;
 using Chess3D.App.Wpf.Services;
 using Chess3D.Core.Enums;
 using Chess3D.Core.Models;
+using Chess3D.Engine.Stockfish.Services;
 using Chess3D.Rendering.Wpf.ViewModels;
 
 namespace Chess3D.App.Wpf.Views;
@@ -21,9 +28,17 @@ public partial class MainWindow : Window
         VersusCpu
     }
 
+    private enum CpuLevel
+    {
+        Level1,
+        Level2,
+        Level3
+    }
+
     private readonly record struct CameraViewTarget(Point3D Position, Point3D Target, double FieldOfView);
 
     private readonly OrbitCameraController _cameraController;
+    private readonly Random _random = new();
 
     private BoardState _boardState = null!;
     private Board3DViewModel _boardViewModel = null!;
@@ -31,12 +46,18 @@ public partial class MainWindow : Window
 
     private BoardViewMode _boardViewMode = BoardViewMode.LocalTwoPlayers;
     private PieceColor _humanPlayerColor = PieceColor.White;
+    private CpuLevel _cpuLevel = CpuLevel.Level1;
+    private bool _isCpuThinking;
+
+    private StockfishUciClient? _stockfishClient;
+    private CancellationTokenSource? _cpuCts;
 
     public MainWindow()
     {
         InitializeComponent();
 
         SourceInitialized += MainWindow_SourceInitialized;
+        Closed += MainWindow_Closed;
 
         _cameraController = new OrbitCameraController(Viewport, Camera);
 
@@ -45,9 +66,47 @@ public partial class MainWindow : Window
         Root.MouseLeftButtonDown += Root_MouseLeftButtonDown;
     }
 
-    private void MainWindow_SourceInitialized(object? sender, EventArgs e)
+    private async void MainWindow_SourceInitialized(object? sender, EventArgs e)
     {
         EnableDarkTitleBar();
+        await InitializeStockfishAsync();
+    }
+
+    private async void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        _cpuCts?.Cancel();
+        _cpuCts?.Dispose();
+        _cpuCts = null;
+
+        if (_stockfishClient is not null)
+            await _stockfishClient.DisposeAsync();
+    }
+
+    private async Task InitializeStockfishAsync()
+    {
+        if (_stockfishClient is not null)
+            return;
+
+        string enginePath = Path.Combine(AppContext.BaseDirectory, "Engines", "stockfish.exe");
+        if (!File.Exists(enginePath))
+        {
+            MessageBox.Show($"Stockfish introuvable : {enginePath}", "Stockfish", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        _stockfishClient = new StockfishUciClient(enginePath);
+
+        try
+        {
+            await _stockfishClient.InitializeAsync();
+            await _stockfishClient.NewGameAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Impossible d'initialiser Stockfish : {ex.Message}", "Stockfish", MessageBoxButton.OK, MessageBoxImage.Error);
+            await _stockfishClient.DisposeAsync();
+            _stockfishClient = null;
+        }
     }
 
     private void EnableDarkTitleBar()
@@ -60,19 +119,11 @@ public partial class MainWindow : Window
 
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 18985))
         {
-            _ = DwmSetWindowAttribute(
-                hwnd,
-                DWMWA_USE_IMMERSIVE_DARK_MODE,
-                ref enabled,
-                sizeof(int));
+            _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref enabled, sizeof(int));
         }
         else if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 17763))
         {
-            _ = DwmSetWindowAttribute(
-                hwnd,
-                DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1,
-                ref enabled,
-                sizeof(int));
+            _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref enabled, sizeof(int));
         }
     }
 
@@ -83,6 +134,9 @@ public partial class MainWindow : Window
 
     private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (_isCpuThinking || IsCpuTurn())
+            return;
+
         Point mousePosition = e.GetPosition(Viewport);
 
         HitTestResult result = VisualTreeHelper.HitTest(Viewport, mousePosition);
@@ -94,7 +148,7 @@ public partial class MainWindow : Window
             if (_boardViewModel.TrySelectPiece(geometryModel))
             {
                 var piece = _boardViewModel.SelectedPiece!;
-                Title = $"Chess 3D - piËce sÈlectionnÈe : {piece.PieceType} {piece.PieceColor} en {(char)('a' + piece.File)}{piece.Rank + 1}";
+                Title = $"Chess 3D - pi√®ce s√©lectionn√©e : {piece.PieceType} {piece.PieceColor} en {(char)('a' + piece.File)}{piece.Rank + 1}";
                 UpdateStatusDisplay();
                 return;
             }
@@ -132,7 +186,7 @@ public partial class MainWindow : Window
 
         if (_boardViewModel.TryMoveSelectedPieceTo(file, rank))
         {
-            Title = $"Chess 3D - dÈplacement vers {(char)('a' + file)}{rank + 1}";
+            Title = $"Chess 3D - d√©placement vers {(char)('a' + file)}{rank + 1}";
             OnMoveCompleted();
         }
         else
@@ -168,6 +222,7 @@ public partial class MainWindow : Window
 
         AnimateCameraForCurrentMode();
         UpdateStatusDisplay();
+        TryStartCpuTurnIfNeeded();
     }
 
     private void PlayWhiteMenuItem_Click(object sender, RoutedEventArgs e)
@@ -181,6 +236,7 @@ public partial class MainWindow : Window
             AnimateCameraForCurrentMode();
 
         UpdateStatusDisplay();
+        TryStartCpuTurnIfNeeded();
     }
 
     private void PlayBlackMenuItem_Click(object sender, RoutedEventArgs e)
@@ -194,18 +250,66 @@ public partial class MainWindow : Window
             AnimateCameraForCurrentMode();
 
         UpdateStatusDisplay();
+        TryStartCpuTurnIfNeeded();
+    }
+
+    private void CpuLevel1MenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        _cpuLevel = CpuLevel.Level1;
+        UpdateCpuLevelMenuChecks();
+        UpdateStatusDisplay();
+        TryStartCpuTurnIfNeeded();
+    }
+
+    private void CpuLevel2MenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        _cpuLevel = CpuLevel.Level2;
+        UpdateCpuLevelMenuChecks();
+        UpdateStatusDisplay();
+    }
+
+    private void CpuLevel3MenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        _cpuLevel = CpuLevel.Level3;
+        UpdateCpuLevelMenuChecks();
+        UpdateStatusDisplay();
+    }
+
+    private void UpdateCpuLevelMenuChecks()
+    {
+        CpuLevel1MenuItem.IsChecked = _cpuLevel == CpuLevel.Level1;
+        CpuLevel2MenuItem.IsChecked = _cpuLevel == CpuLevel.Level2;
+        CpuLevel3MenuItem.IsChecked = _cpuLevel == CpuLevel.Level3;
+    }
+
+    private int GetCpuLevelNumber()
+    {
+        return _cpuLevel switch
+        {
+            CpuLevel.Level1 => 1,
+            CpuLevel.Level2 => 2,
+            CpuLevel.Level3 => 3,
+            _ => 1
+        };
     }
 
     private void StartNewGame()
     {
+        _cpuCts?.Cancel();
+        _cpuCts?.Dispose();
+        _cpuCts = null;
+
         _boardState = BoardState.CreateInitial();
         _boardViewModel = new Board3DViewModel(_boardState);
+        _isCpuThinking = false;
 
         RenderScene();
         SetCameraInstantForCurrentMode();
+        UpdateCpuLevelMenuChecks();
 
         Title = "Chess 3D - nouvelle partie";
         UpdateStatusDisplay();
+        TryStartCpuTurnIfNeeded();
     }
 
     private void RenderScene()
@@ -231,20 +335,27 @@ public partial class MainWindow : Window
         };
     }
 
+    private PieceColor GetCpuColor()
+    {
+        return _humanPlayerColor == PieceColor.White
+            ? PieceColor.Black
+            : PieceColor.White;
+    }
+
+    private bool IsCpuTurn()
+    {
+        return _boardViewMode == BoardViewMode.VersusCpu &&
+               _boardState.SideToMove == GetCpuColor();
+    }
+
     private CameraViewTarget GetCameraViewTargetForCurrentMode()
     {
         Point3D target = new Point3D(0, 0.5, 0);
         var viewSide = GetViewSide();
 
-        Point3D position;
-        if (viewSide == PieceColor.White)
-        {
-            position = new Point3D(0, 7.5, -10.5);
-        }
-        else
-        {
-            position = new Point3D(0, 7.5, 10.5);
-        }
+        Point3D position = viewSide == PieceColor.White
+            ? new Point3D(0, 7.5, -10.5)
+            : new Point3D(0, 7.5, 10.5);
 
         return new CameraViewTarget(position, target, 60);
     }
@@ -303,6 +414,90 @@ public partial class MainWindow : Window
         AnimateCameraForCurrentMode();
         UpdateStatusDisplay();
         ShowGameStatePopupIfNeeded();
+        TryStartCpuTurnIfNeeded();
+    }
+
+    private void TryStartCpuTurnIfNeeded()
+    {
+        if (_isCpuThinking)
+            return;
+
+        if (!IsCpuTurn())
+            return;
+
+        if (_cpuLevel != CpuLevel.Level1)
+            return;
+
+        if (!HasAnyMoveForSideToMove())
+        {
+            UpdateStatusDisplay();
+            ShowGameStatePopupIfNeeded();
+            return;
+        }
+
+        _isCpuThinking = true;
+        UpdateStatusDisplay();
+
+        _ = StartCpuMoveAsync();
+    }
+
+    private async Task StartCpuMoveAsync()
+    {
+        _cpuCts?.Cancel();
+        _cpuCts?.Dispose();
+        _cpuCts = new CancellationTokenSource();
+
+        try
+        {
+            if (_stockfishClient is null)
+            {
+                await InitializeStockfishAsync();
+                if (_stockfishClient is null)
+                    throw new InvalidOperationException("Stockfish non initialis√©.");
+            }
+
+            string fen = _boardState.ToFen();
+            Move selectedMove = await _stockfishClient.GetBestMoveAsync(fen, GetCpuLevelNumber(), _cpuCts.Token);
+
+            _boardState.MakeMove(selectedMove);
+            _boardViewModel.RefreshPiecesFromBoardState();
+
+            Title = $"Chess 3D - CPU joue {selectedMove.ToUci()}";
+
+            _isCpuThinking = false;
+            OnMoveCompleted();
+        }
+        catch (OperationCanceledException)
+        {
+            _isCpuThinking = false;
+            UpdateStatusDisplay();
+        }
+        catch (Exception ex)
+        {
+            _isCpuThinking = false;
+            UpdateStatusDisplay();
+
+            MessageBox.Show(
+                $"Erreur Stockfish : {ex.Message}",
+                "Stockfish",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private bool HasAnyMoveForSideToMove()
+    {
+        foreach (var entry in _boardState.GetOccupiedSquares())
+        {
+            if (entry.Piece.Color != _boardState.SideToMove)
+                continue;
+
+            var moves = _boardState.GeneratePseudoLegalMovesFor(entry.Square);
+            if (moves.Count > 0)
+                return true;
+        }
+
+        return false;
     }
 
     private void UpdateStatusDisplay()
@@ -311,77 +506,55 @@ public partial class MainWindow : Window
             ? "Blancs"
             : "Noirs";
 
-        string statusText = _boardState.GetGameEndState() switch
-        {
-            GameEndState.None => $"Tour : {sideToMoveText}",
-            GameEndState.Check => $"Tour : {sideToMoveText} - …chec",
-            GameEndState.Checkmate => $"Tour : {sideToMoveText} - …chec et mat",
-            GameEndState.Stalemate => $"Tour : {sideToMoveText} - Pat",
-            _ => $"Tour : {sideToMoveText}"
-        };
-
         if (StatusTextBlock != null)
-            StatusTextBlock.Text = statusText;
+            StatusTextBlock.Text = $"Tour : {sideToMoveText}";
 
         if (SelectionTextBlock != null)
         {
             if (_boardViewModel.SelectedPiece == null)
             {
-                SelectionTextBlock.Text = "Aucune sÈlection";
+                SelectionTextBlock.Text = "Aucune s√©lection";
             }
             else
             {
                 var piece = _boardViewModel.SelectedPiece;
                 SelectionTextBlock.Text =
-                    $"SÈlection : {piece.PieceType} {piece.PieceColor} en {(char)('a' + piece.File)}{piece.Rank + 1}";
+                    $"S√©lection : {piece.PieceType} {piece.PieceColor} en {(char)('a' + piece.File)}{piece.Rank + 1}";
             }
         }
 
         if (ViewModeTextBlock != null)
         {
-            ViewModeTextBlock.Text = _boardViewMode switch
+            string modeText = _boardViewMode switch
             {
                 BoardViewMode.LocalTwoPlayers => "Mode : 2 joueurs",
                 BoardViewMode.VersusCpu => _humanPlayerColor == PieceColor.White
-                    ? "Mode : CPU - vous jouez les Blancs"
-                    : "Mode : CPU - vous jouez les Noirs",
+                    ? $"Mode : CPU niv. {GetCpuLevelNumber()} - vous jouez les Blancs"
+                    : $"Mode : CPU niv. {GetCpuLevelNumber()} - vous jouez les Noirs",
                 _ => "Mode : inconnu"
             };
+
+            if (_isCpuThinking && _boardViewMode == BoardViewMode.VersusCpu)
+                modeText += " - CPU r√©fl√©chit...";
+
+            ViewModeTextBlock.Text = modeText;
         }
     }
 
     private void ShowGameStatePopupIfNeeded()
     {
+        if (HasAnyMoveForSideToMove())
+            return;
+
         string sideToMoveText = _boardState.SideToMove == PieceColor.White
             ? "Blancs"
             : "Noirs";
 
-        switch (_boardState.GetGameEndState())
-        {
-            case GameEndState.Check:
-                MessageBox.Show(
-                    $"{sideToMoveText} sont en Èchec.",
-                    "…chec",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                break;
-
-            case GameEndState.Checkmate:
-                MessageBox.Show(
-                    $"{sideToMoveText} sont en Èchec et mat.",
-                    "…chec et mat",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                break;
-
-            case GameEndState.Stalemate:
-                MessageBox.Show(
-                    "La partie est nulle par pat.",
-                    "Pat",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                break;
-        }
+        MessageBox.Show(
+            $"Aucun coup disponible pour {sideToMoveText}.",
+            "Fin de partie",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;

@@ -15,4 +15,12 @@
     <ProjectReference Include="..\Chess3D.Engine.Stockfish\Chess3D.Engine.Stockfish.csproj" />
     <ProjectReference Include="..\Chess3D.Rendering.Wpf\Chess3D.Rendering.Wpf.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Engines\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Engines\stockfish.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
