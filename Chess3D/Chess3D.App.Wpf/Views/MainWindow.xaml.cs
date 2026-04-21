@@ -361,7 +361,14 @@ public partial class MainWindow : Window
     private void UpdateCameraAfterMove()
     {
         if (_playVsCpu)
+        {
+            if (_boardState.SideToMove == _humanColor)
+            {
+                AnimateCameraToSide(_humanColor, false);
+            }
+
             return;
+        }
 
         AnimateCameraToSide(_boardState.SideToMove, false);
     }
@@ -450,19 +457,13 @@ public partial class MainWindow : Window
 
     private void About_Click(object sender, RoutedEventArgs e)
     {
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        string versionText = version is null
-            ? "Version inconnue"
-            : $"Version {version.Major}.{version.Minor}.{version.Build}";
+        var aboutWindow = new AboutWindow
+        {
+            Owner = this,
+            Icon = this.Icon
+        };
 
-        MessageBox.Show(
-            "Chess 3D - " + $"{versionText}\n\n" +
-            "Application d'échecs 3D avec moteur Stockfish.\n" +
-            "Fonctionnalités : partie locale, partie contre CPU, affichage 3D, règles spéciales.\n\n" +
-            "©2026 Etienne Jacquemoud",
-            "A propos",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        aboutWindow.ShowDialog();
     }
 
     private void Quit_Click(object sender, RoutedEventArgs e)
