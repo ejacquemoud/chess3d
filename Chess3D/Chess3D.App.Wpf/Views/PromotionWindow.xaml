@@ -8,7 +8,9 @@
         ResizeMode="NoResize"
         WindowStyle="ToolWindow"
         Background="#FF1E1E1E"
-        Foreground="White">
+        Foreground="White"
+        ShowInTaskbar="False"
+        Topmost="True">
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

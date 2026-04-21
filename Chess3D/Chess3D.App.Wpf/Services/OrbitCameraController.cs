@@ -21,6 +21,8 @@ public sealed class OrbitCameraController
     private double _pitchDegrees = -35.0;
     private double _fieldOfView = 60.0;
 
+    private AnimationClockDriver? _activeAnimation;
+
     public OrbitCameraController(UIElement inputElement, PerspectiveCamera camera)
     {
         _inputElement = inputElement;
@@ -37,18 +39,21 @@ public sealed class OrbitCameraController
 
     public void SetTarget(Point3D target)
     {
+        StopActiveAnimation();
         _target = target;
         ApplyCameraImmediate();
     }
 
     public void SetDistance(double distance)
     {
+        StopActiveAnimation();
         _distance = Clamp(distance, 4.0, 30.0);
         ApplyCameraImmediate();
     }
 
     public void SetAngles(double yawDegrees, double pitchDegrees)
     {
+        StopActiveAnimation();
         _yawDegrees = NormalizeAngle(yawDegrees);
         _pitchDegrees = ClampPitch(pitchDegrees);
         ApplyCameraImmediate();
@@ -56,12 +61,15 @@ public sealed class OrbitCameraController
 
     public void SetFieldOfView(double fieldOfView)
     {
+        StopActiveAnimation();
         _fieldOfView = Clamp(fieldOfView, 20.0, 80.0);
         ApplyCameraImmediate();
     }
 
     public void SetView(Point3D target, double distance, double yawDegrees, double pitchDegrees, double fieldOfView = 60.0)
     {
+        StopActiveAnimation();
+
         _target = target;
         _distance = Clamp(distance, 4.0, 30.0);
         _yawDegrees = NormalizeAngle(yawDegrees);
@@ -71,9 +79,10 @@ public sealed class OrbitCameraController
         ApplyCameraImmediate();
     }
 
-    public void AnimateToView(Point3D target, double distance, double yawDegrees, double pitchDegrees, double fieldOfView = 60.0, int durationMs = 1400)
+    public void AnimateToView(Point3D target, double distance, double yawDegrees, double pitchDegrees, double fieldOfView = 60.0, int durationMs = 700)
     {
         SyncFromCurrentCamera();
+        StopActiveAnimation();
 
         var fromTarget = _target;
         var fromDistance = _distance;
@@ -90,22 +99,25 @@ public sealed class OrbitCameraController
         double yawDelta = ShortestAngleDelta(fromYaw, toYaw);
 
         var duration = TimeSpan.FromMilliseconds(durationMs);
-        var easing = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        var easing = new SineEase { EasingMode = EasingMode.EaseInOut };
 
-        var animationClock = new AnimationClockDriver(duration, progress =>
-        {
-            double eased = easing.Ease(progress);
+        _activeAnimation = new AnimationClockDriver(
+            duration,
+            progress =>
+            {
+                double eased = easing.Ease(progress);
 
-            _target = Lerp(fromTarget, toTarget, eased);
-            _distance = Lerp(fromDistance, toDistance, eased);
-            _yawDegrees = NormalizeAngle(fromYaw + yawDelta * eased);
-            _pitchDegrees = Lerp(fromPitch, toPitch, eased);
-            _fieldOfView = Lerp(fromFov, toFov, eased);
+                _target = Lerp(fromTarget, toTarget, eased);
+                _distance = Lerp(fromDistance, toDistance, eased);
+                _yawDegrees = NormalizeAngle(fromYaw + yawDelta * eased);
+                _pitchDegrees = Lerp(fromPitch, toPitch, eased);
+                _fieldOfView = Lerp(fromFov, toFov, eased);
 
-            ApplyCameraImmediate();
-        });
+                ApplyCameraImmediate();
+            },
+            () => _activeAnimation = null);
 
-        animationClock.Start();
+        _activeAnimation.Start();
     }
 
     public void SyncFromCurrentCamera()
@@ -135,6 +147,7 @@ public sealed class OrbitCameraController
 
     private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
+        StopActiveAnimation();
         SyncFromCurrentCamera();
 
         _isRotating = true;
@@ -176,12 +189,19 @@ public sealed class OrbitCameraController
 
     private void OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        StopActiveAnimation();
         SyncFromCurrentCamera();
 
         double zoomFactor = e.Delta > 0 ? 0.90 : 1.10;
         _distance = Clamp(_distance * zoomFactor, 4.0, 30.0);
 
         ApplyCameraImmediate();
+    }
+
+    private void StopActiveAnimation()
+    {
+        _activeAnimation?.Stop();
+        _activeAnimation = null;
     }
 
     private void ApplyCameraImmediate()
@@ -252,18 +272,34 @@ public sealed class OrbitCameraController
     {
         private readonly TimeSpan _duration;
         private readonly Action<double> _onProgress;
+        private readonly Action? _onCompleted;
         private DateTime _startTime;
+        private bool _isRunning;
 
-        public AnimationClockDriver(TimeSpan duration, Action<double> onProgress)
+        public AnimationClockDriver(TimeSpan duration, Action<double> onProgress, Action? onCompleted = null)
         {
             _duration = duration;
             _onProgress = onProgress;
+            _onCompleted = onCompleted;
         }
 
         public void Start()
         {
+            if (_isRunning)
+                return;
+
+            _isRunning = true;
             _startTime = DateTime.UtcNow;
             CompositionTarget.Rendering += OnRendering;
+        }
+
+        public void Stop()
+        {
+            if (!_isRunning)
+                return;
+
+            _isRunning = false;
+            CompositionTarget.Rendering -= OnRendering;
         }
 
         private void OnRendering(object? sender, EventArgs e)
@@ -276,7 +312,10 @@ public sealed class OrbitCameraController
             _onProgress(progress);
 
             if (progress >= 1.0)
-                CompositionTarget.Rendering -= OnRendering;
+            {
+                Stop();
+                _onCompleted?.Invoke();
+            }
         }
     }
 }
