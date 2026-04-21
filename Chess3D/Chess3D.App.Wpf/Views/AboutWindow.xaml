@@ -104,13 +104,12 @@
                             BorderThickness="1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top">
-                        <Viewbox Margin="12">
-                            <TextBlock Text="♞"
-                                       FontSize="28"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                        </Viewbox>
+                                            <Image x:Name="AppIconImage"
+                               Width="28"
+                               Height="28"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
                     </Border>
 
                     <StackPanel Grid.Column="1">

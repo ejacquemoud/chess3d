@@ -4,34 +4,32 @@
         Title="Chess 3D"
         Height="900"
         Width="1400"
-        Background="#0B1016"
-        Foreground="#E8EDF5"
+        Background="#0A0F15"
+        Foreground="#E7EDF6"
         FontFamily="Segoe UI Variable Display, Segoe UI, Arial"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
 
     <Window.Resources>
-        <!-- Palette -->
-        <SolidColorBrush x:Key="WindowBgBrush" Color="#0B1016" />
-        <SolidColorBrush x:Key="TopBarBrush" Color="#101823" />
-        <SolidColorBrush x:Key="TopBarBorderBrush" Color="#1E2A38" />
+        <SolidColorBrush x:Key="WindowBgBrush" Color="#0A0F15" />
+        <SolidColorBrush x:Key="ChromeBrush" Color="#0F1721" />
+        <SolidColorBrush x:Key="ChromeBorderBrush" Color="#1D2937" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#121B26" />
+        <SolidColorBrush x:Key="SurfaceAltBrush" Color="#16212D" />
         <SolidColorBrush x:Key="PopupBrush" Color="#14202C" />
-        <SolidColorBrush x:Key="PopupBorderBrush" Color="#263748" />
-        <SolidColorBrush x:Key="HoverBrush" Color="#1C2B3C" />
-        <SolidColorBrush x:Key="PressedBrush" Color="#24374A" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#79B8FF" />
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#213C56" />
-        <SolidColorBrush x:Key="StatusBarBrush" Color="#0E151E" />
-        <SolidColorBrush x:Key="StatusBarBorderBrush" Color="#1A2532" />
-        <SolidColorBrush x:Key="StatusChipBrush" Color="#15212E" />
-        <SolidColorBrush x:Key="StatusChipBorderBrush" Color="#26384A" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E8EDF5" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#AAB5C3" />
-        <SolidColorBrush x:Key="TextDisabledBrush" Color="#6B7683" />
-        <SolidColorBrush x:Key="SeparatorBrush" Color="#2B3C4F" />
-        <SolidColorBrush x:Key="ViewportBorderBrush" Color="#1A2430" />
+        <SolidColorBrush x:Key="PopupBorderBrush" Color="#26384A" />
+        <SolidColorBrush x:Key="HoverBrush" Color="#1B2A39" />
+        <SolidColorBrush x:Key="PressedBrush" Color="#243649" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#78B7FF" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#183149" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E7EDF6" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A9B5C4" />
+        <SolidColorBrush x:Key="TextDisabledBrush" Color="#6A7684" />
+        <SolidColorBrush x:Key="SeparatorBrush" Color="#2A3A4A" />
+        <SolidColorBrush x:Key="ViewportBorderBrush" Color="#223142" />
+        <SolidColorBrush x:Key="StatusChipBrush" Color="#15202C" />
+        <SolidColorBrush x:Key="StatusChipBorderBrush" Color="#25384A" />
 
-        <!-- Fenêtre -->
         <Style TargetType="{x:Type Window}">
             <Setter Property="Background" Value="{StaticResource WindowBgBrush}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
@@ -39,17 +37,15 @@
             <Setter Property="TextOptions.TextRenderingMode" Value="Auto" />
         </Style>
 
-        <!-- Barre de menu -->
         <Style TargetType="{x:Type Menu}">
-            <Setter Property="Background" Value="{StaticResource TopBarBrush}" />
+            <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource TopBarBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource ChromeBorderBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <Setter Property="Padding" Value="10,8" />
             <Setter Property="FontSize" Value="14" />
         </Style>
 
-        <!-- Séparateurs -->
         <Style TargetType="{x:Type Separator}">
             <Setter Property="Template">
                 <Setter.Value>
@@ -62,37 +58,21 @@
             </Setter>
         </Style>
 
-        <!-- StatusBar -->
         <Style TargetType="{x:Type StatusBar}">
-            <Setter Property="Background" Value="{StaticResource StatusBarBrush}" />
+            <Setter Property="Background" Value="#0D141D" />
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource StatusBarBorderBrush}" />
+            <Setter Property="BorderBrush" Value="#1A2633" />
             <Setter Property="BorderThickness" Value="1,1,1,0" />
-            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="Padding" Value="10,4" />
             <Setter Property="FontSize" Value="13" />
         </Style>
 
         <Style TargetType="{x:Type StatusBarItem}">
-            <Setter Property="Margin" Value="3,0" />
-            <Setter Property="Padding" Value="6,2" />
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-            <Setter Property="Background" Value="{StaticResource StatusChipBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource StatusChipBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type StatusBarItem}">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="StatusPrimaryTextStyle" TargetType="{x:Type TextBlock}">
@@ -108,111 +88,109 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <!-- Style unifié des MenuItem -->
         <Style TargetType="{x:Type MenuItem}">
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="Background" Value="{StaticResource TopBarBrush}" />
+            <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Padding" Value="7,4" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type MenuItem}">
                         <Border x:Name="RootBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="10"
-                                Margin="3,0"
-                                SnapsToDevicePixels="True">
-                            <Grid>
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="10"
+                        Margin="0"
+                        SnapsToDevicePixels="True">
+                            <Grid x:Name="LayoutRoot" Height="30">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="28" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="18" />
+                                    <ColumnDefinition x:Name="CheckColumn" Width="24" />
+                                    <ColumnDefinition x:Name="HeaderColumn" Width="*" />
+                                    <ColumnDefinition x:Name="ArrowColumn" Width="16" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Zone coche -->
                                 <Grid x:Name="CheckHost"
-                                      Grid.Column="0"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Visibility="Collapsed">
+                              Grid.Column="0"
+                              Width="24"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Visibility="Collapsed">
                                     <Border x:Name="CheckBadge"
-                                            Width="16"
-                                            Height="16"
-                                            CornerRadius="8"
-                                            Background="Transparent"
-                                            BorderBrush="{StaticResource AccentSoftBrush}"
-                                            BorderThickness="1">
+                                    Width="14"
+                                    Height="14"
+                                    CornerRadius="7"
+                                    Background="#13202C"
+                                    BorderBrush="#223140"
+                                    BorderThickness="1">
                                         <Path x:Name="CheckGlyph"
-                                              Data="M 3 8 L 6.5 11.5 L 13 5"
-                                              Stroke="{StaticResource AccentBrush}"
-                                              StrokeThickness="2"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              StrokeLineJoin="Round"
-                                              Visibility="Collapsed" />
-                                    </Border>
-                                </Grid>
-
-                                <!-- Texte -->
-                                <ContentPresenter x:Name="HeaderHost"
-                                                  Grid.Column="1"
-                                                  Margin="6,2,10,2"
-                                                  VerticalAlignment="Center"
-                                                  RecognizesAccessKey="True"
-                                                  ContentSource="Header" />
-
-                                <!-- Flèche sous-menu -->
-                                <Path x:Name="ArrowGlyph"
-                                      Grid.Column="2"
-                                      Data="M 5 4 L 9 8 L 5 12"
-                                      Stroke="{StaticResource TextSecondaryBrush}"
+                                      Data="M 3 7 L 5.8 9.8 L 11 4.8"
+                                      Stroke="#7DB8F6"
                                       StrokeThickness="1.8"
                                       StrokeStartLineCap="Round"
                                       StrokeEndLineCap="Round"
                                       StrokeLineJoin="Round"
-                                      Width="14"
-                                      Height="14"
-                                      Stretch="None"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
                                       Visibility="Collapsed" />
+                                    </Border>
+                                </Grid>
 
-                                <!-- Popup -->
+                                <ContentPresenter x:Name="HeaderHost"
+                                          Grid.Column="1"
+                                          Margin="6,0,6,0"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"
+                                          ContentSource="Header" />
+
+                                <Path x:Name="ArrowGlyph"
+                              Grid.Column="2"
+                              Data="M 5 4 L 9 8 L 5 12"
+                              Stroke="{StaticResource TextSecondaryBrush}"
+                              StrokeThickness="1.6"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Width="12"
+                              Height="12"
+                              Stretch="None"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Visibility="Collapsed" />
+
                                 <Popup x:Name="PART_Popup"
-                                       AllowsTransparency="True"
-                                       Focusable="False"
-                                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
-                                       Placement="Bottom"
-                                       PopupAnimation="Fade">
-                                    <Border x:Name="PopupBorder"
-                                            Background="{StaticResource PopupBrush}"
-                                            BorderBrush="{StaticResource PopupBorderBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="16"
-                                            Margin="0,8,0,0"
-                                            SnapsToDevicePixels="True">
+                               AllowsTransparency="True"
+                               Focusable="False"
+                               IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                               Placement="Bottom"
+                               PopupAnimation="Fade">
+                                    <Border Background="{StaticResource PopupBrush}"
+                                    BorderBrush="#223140"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Margin="0,6,0,0"
+                                    SnapsToDevicePixels="True">
                                         <Border.Effect>
-                                            <DropShadowEffect BlurRadius="18"
-                                                              ShadowDepth="0"
-                                                              Opacity="0.26"
-                                                              Color="#000000" />
+                                            <DropShadowEffect BlurRadius="20"
+                                                      ShadowDepth="0"
+                                                      Opacity="0.22"
+                                                      Color="#000000" />
                                         </Border.Effect>
 
                                         <Grid>
-                                            <Border Width="30"
-                                                    HorizontalAlignment="Left"
-                                                    Background="#172534"
-                                                    CornerRadius="16,0,0,16"
-                                                    IsHitTestVisible="False" />
+                                            <Border Width="24"
+                                            HorizontalAlignment="Left"
+                                            Background="#17222E"
+                                            CornerRadius="16,0,0,16"
+                                            IsHitTestVisible="False" />
 
                                             <StackPanel IsItemsHost="True"
-                                                        Margin="8"
-                                                        KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                                Margin="8"
+                                                KeyboardNavigation.DirectionalNavigation="Cycle" />
                                         </Grid>
                                     </Border>
                                 </Popup>
@@ -220,71 +198,84 @@
                         </Border>
 
                         <ControlTemplate.Triggers>
-                            <!-- Top-level header -->
                             <Trigger Property="Role" Value="TopLevelHeader">
-                                <Setter Property="Background" Value="{StaticResource TopBarBrush}" />
+                                <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
                                 <Setter TargetName="PART_Popup" Property="Placement" Value="Bottom" />
-                                <Setter TargetName="RootBorder" Property="Margin" Value="3,0" />
-                                <Setter TargetName="HeaderHost" Property="Margin" Value="2,2,2,2" />
                                 <Setter TargetName="CheckHost" Property="Visibility" Value="Collapsed" />
                                 <Setter TargetName="ArrowGlyph" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="CheckColumn" Property="Width" Value="0" />
+                                <Setter TargetName="ArrowColumn" Property="Width" Value="0" />
+                                <Setter TargetName="RootBorder" Property="CornerRadius" Value="10" />
+                                <Setter TargetName="RootBorder" Property="Margin" Value="0" />
+                                <Setter TargetName="LayoutRoot" Property="Height" Value="30" />
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="6,0,6,0" />
+                                <Setter TargetName="HeaderHost" Property="HorizontalAlignment" Value="Center" />
                             </Trigger>
 
-                            <!-- Top-level item -->
                             <Trigger Property="Role" Value="TopLevelItem">
-                                <Setter Property="Background" Value="{StaticResource TopBarBrush}" />
+                                <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
                                 <Setter TargetName="CheckHost" Property="Visibility" Value="Collapsed" />
                                 <Setter TargetName="ArrowGlyph" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="CheckColumn" Property="Width" Value="0" />
+                                <Setter TargetName="ArrowColumn" Property="Width" Value="0" />
+                                <Setter TargetName="LayoutRoot" Property="Height" Value="30" />
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="6,0,6,0" />
+                                <Setter TargetName="HeaderHost" Property="HorizontalAlignment" Value="Center" />
                             </Trigger>
 
-                            <!-- Sous-menu item -->
                             <Trigger Property="Role" Value="SubmenuItem">
                                 <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="FontWeight" Value="Normal" />
-                                <Setter TargetName="RootBorder" Property="Margin" Value="0,2" />
-                                <Setter TargetName="HeaderHost" Property="Margin" Value="6,0,10,0" />
+                                <Setter TargetName="CheckColumn" Property="Width" Value="24" />
+                                <Setter TargetName="ArrowColumn" Property="Width" Value="16" />
+                                <Setter TargetName="RootBorder" Property="Margin" Value="0,1" />
+                                <Setter TargetName="RootBorder" Property="CornerRadius" Value="8" />
+                                <Setter TargetName="LayoutRoot" Property="Height" Value="32" />
                                 <Setter TargetName="PART_Popup" Property="Placement" Value="Right" />
                                 <Setter TargetName="PART_Popup" Property="HorizontalOffset" Value="8" />
+                                <Setter TargetName="HeaderHost" Property="HorizontalAlignment" Value="Left" />
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="6,0,8,0" />
                             </Trigger>
 
-                            <!-- Sous-menu header -->
                             <Trigger Property="Role" Value="SubmenuHeader">
                                 <Setter Property="Background" Value="Transparent" />
                                 <Setter Property="FontWeight" Value="Normal" />
-                                <Setter TargetName="RootBorder" Property="Margin" Value="0,2" />
-                                <Setter TargetName="HeaderHost" Property="Margin" Value="6,0,10,0" />
+                                <Setter TargetName="CheckColumn" Property="Width" Value="24" />
+                                <Setter TargetName="ArrowColumn" Property="Width" Value="16" />
+                                <Setter TargetName="RootBorder" Property="Margin" Value="0,1" />
+                                <Setter TargetName="RootBorder" Property="CornerRadius" Value="8" />
+                                <Setter TargetName="LayoutRoot" Property="Height" Value="32" />
                                 <Setter TargetName="ArrowGlyph" Property="Visibility" Value="Visible" />
                                 <Setter TargetName="PART_Popup" Property="Placement" Value="Right" />
                                 <Setter TargetName="PART_Popup" Property="HorizontalOffset" Value="8" />
+                                <Setter TargetName="HeaderHost" Property="HorizontalAlignment" Value="Left" />
+                                <Setter TargetName="HeaderHost" Property="Margin" Value="6,0,8,0" />
                             </Trigger>
 
-                            <!-- Items cochables -->
                             <Trigger Property="IsCheckable" Value="True">
                                 <Setter TargetName="CheckHost" Property="Visibility" Value="Visible" />
                             </Trigger>
 
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CheckBadge" Property="Background" Value="{StaticResource AccentSoftBrush}" />
-                                <Setter TargetName="CheckBadge" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="CheckBadge" Property="Background" Value="#162433" />
+                                <Setter TargetName="CheckBadge" Property="BorderBrush" Value="#2A3B4A" />
                                 <Setter TargetName="CheckGlyph" Property="Visibility" Value="Visible" />
                             </Trigger>
 
-                            <!-- Hover -->
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource HoverBrush}" />
-                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentSoftBrush}" />
+                                <Setter TargetName="RootBorder" Property="Background" Value="#182331" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#223140" />
                             </Trigger>
 
-                            <!-- Ouvert -->
                             <Trigger Property="IsSubmenuOpen" Value="True">
-                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource PressedBrush}" />
-                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="RootBorder" Property="Background" Value="#1A2634" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#243342" />
                             </Trigger>
 
-                            <!-- Désactivé -->
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
                                 <Setter TargetName="ArrowGlyph" Property="Stroke" Value="{StaticResource TextDisabledBrush}" />
+                                <Setter TargetName="CheckBadge" Property="Opacity" Value="0.55" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -345,43 +336,64 @@
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
                 <TextBlock x:Name="StatusTextBlock"
-                           Style="{StaticResource StatusPrimaryTextStyle}"
-                           Text="Tour : Blancs" />
+                   Style="{StaticResource StatusPrimaryTextStyle}"
+                   Text="Tour : Blancs" />
             </StatusBarItem>
+
+            <Border Width="1"
+            Height="14"
+            Margin="8,0"
+            Background="#223140"
+            Opacity="0.65" />
 
             <StatusBarItem>
                 <TextBlock x:Name="SelectionTextBlock"
-                           Style="{StaticResource StatusMutedTextStyle}"
-                           Text="Aucune sélection" />
+                   Style="{StaticResource StatusMutedTextStyle}"
+                   Text="Aucune sélection" />
             </StatusBarItem>
 
-            <StatusBarItem>
+            <Border Width="1"
+            Height="14"
+            Margin="8,0"
+            Background="#223140"
+            Opacity="0.65" />
+
+            <StatusBarItem HorizontalAlignment="Stretch">
                 <TextBlock x:Name="ViewModeTextBlock"
-                           Style="{StaticResource StatusMutedTextStyle}"
-                           Text="Mode : CPU — Vous jouez Blancs — Niveau 3" />
+                   MinWidth="280"
+                   HorizontalAlignment="Left"
+                   TextAlignment="Left"
+                   Style="{StaticResource StatusMutedTextStyle}"
+                   Text="Mode : 2 joueurs locaux" />
             </StatusBarItem>
         </StatusBar>
 
-        <Border Margin="10"
-                CornerRadius="14"
-                BorderBrush="{StaticResource ViewportBorderBrush}"
-                BorderThickness="1"
-                Background="Black"
-                SnapsToDevicePixels="True">
-            <Grid x:Name="Root"
-                  Background="Black"
-                  MouseLeftButtonDown="Root_MouseLeftButtonDown">
-                <Viewport3D x:Name="Viewport"
-                            ClipToBounds="True">
-                    <Viewport3D.Camera>
-                        <PerspectiveCamera x:Name="Camera"
-                                           Position="0,10,13"
-                                           LookDirection="0,-8,-13"
-                                           UpDirection="0,1,0"
-                                           FieldOfView="60" />
-                    </Viewport3D.Camera>
-                </Viewport3D>
-            </Grid>
-        </Border>
+        <Grid Margin="10">
+            <Border CornerRadius="16"
+                    Background="#0E151D"
+                    BorderBrush="#18222E"
+                    BorderThickness="1" />
+
+            <Border Margin="1"
+                    CornerRadius="15"
+                    Background="#0B1016"
+                    BorderBrush="{StaticResource ViewportBorderBrush}"
+                    BorderThickness="1">
+                <Grid x:Name="Root"
+                      Background="Black"
+                      MouseLeftButtonDown="Root_MouseLeftButtonDown">
+                    <Viewport3D x:Name="Viewport"
+                                ClipToBounds="True">
+                        <Viewport3D.Camera>
+                            <PerspectiveCamera x:Name="Camera"
+                                               Position="0,10,13"
+                                               LookDirection="0,-8,-13"
+                                               UpDirection="0,1,0"
+                                               FieldOfView="60" />
+                        </Viewport3D.Camera>
+                    </Viewport3D>
+                </Grid>
+            </Border>
+        </Grid>
     </DockPanel>
 </Window>

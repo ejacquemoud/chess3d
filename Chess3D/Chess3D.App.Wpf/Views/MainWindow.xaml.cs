@@ -289,6 +289,7 @@ public partial class MainWindow : Window
             _boardState.MakeMove(cpuMove);
             _boardViewModel.RefreshPiecesFromBoardState();
             UpdateSelectionText("Aucune sélection");
+            UpdateCameraAfterMove();
 
             if (ShowGameStateIfNeeded())
                 return;
@@ -444,8 +445,8 @@ public partial class MainWindow : Window
             {
                 string human = _humanColor == PieceColor.White ? "Blancs" : "Noirs";
                 string modeText = _isCpuThinking
-                    ? $"Mode : CPU — Vous jouez {human} — Niveau {_cpuLevel} — réflexion"
-                    : $"Mode : CPU — Vous jouez {human} — Niveau {_cpuLevel}";
+                    ? $"Mode : CPU — Vous jouez les {human} — Niveau {_cpuLevel} — réflexion"
+                    : $"Mode : CPU — Vous jouez les {human} — Niveau {_cpuLevel}";
                 ViewModeTextBlock.Text = modeText;
             }
             else

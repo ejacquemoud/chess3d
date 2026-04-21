@@ -8,7 +8,9 @@
     <ApplicationIcon>Chess.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Chess.ico" />
+    <Content Include="Chess.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Chess3D.Core\Chess3D.Core.csproj" />
