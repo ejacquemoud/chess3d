@@ -42,48 +42,15 @@ public sealed class Board3DViewModel
     {
         var group = new Model3DGroup();
 
-        AddLights(group);
-        AddBoard(group);
+        group.Children.Add(new AmbientLight(Color.FromRgb(160, 160, 160)));
+        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -2, -1)));
+        group.Children.Add(new DirectionalLight(Color.FromRgb(180, 180, 180), new Vector3D(1, -1, 1)));
 
-        return group;
-    }
-
-    private void AddLights(Model3DGroup group)
-    {
-        group.Children.Add(new AmbientLight(Color.FromRgb(55, 58, 64)));
-
-        group.Children.Add(new DirectionalLight(
-            Color.FromRgb(235, 220, 198),
-            new Vector3D(-0.70, -1.00, -0.45)));
-
-        group.Children.Add(new DirectionalLight(
-            Color.FromRgb(112, 122, 150),
-            new Vector3D(0.55, -0.45, 0.65)));
-
-        group.Children.Add(new DirectionalLight(
-            Color.FromRgb(75, 72, 82),
-            new Vector3D(0.20, 0.15, -1.00)));
-    }
-
-    private void AddBoard(Model3DGroup group)
-    {
         var darkSquare = Color.FromRgb(181, 136, 99);
         var lightSquare = Color.FromRgb(240, 217, 181);
-        var boardBase = Color.FromRgb(74, 49, 33);
+        var boardBase = Color.FromRgb(70, 45, 30);
 
-        group.Children.Add(CreateBox(
-            new Point3D(0, -0.25, 0),
-            8.9,
-            0.50,
-            8.9,
-            boardBase));
-
-        group.Children.Add(CreateBox(
-            new Point3D(0, -0.03, 0),
-            8.25,
-            0.06,
-            8.25,
-            Color.FromRgb(92, 63, 42)));
+        group.Children.Add(CreateBox(new Point3D(0, -0.25, 0), 8.8, 0.5, 8.8, boardBase));
 
         for (int rank = 0; rank < 8; rank++)
         {
@@ -101,6 +68,8 @@ public sealed class Board3DViewModel
                     isLight ? lightSquare : darkSquare));
             }
         }
+
+        return group;
     }
 
     public void RefreshPiecesFromBoardState()
@@ -193,12 +162,12 @@ public sealed class Board3DViewModel
             CurrentMoves.Add(move);
 
             var center = GetSquareCenter(move.file, move.rank);
-            var highlight = CreateHighlightPlate(
-                new Point3D(center.X, BoardTopY + TileHeight + 0.012, center.Z),
-                0.54,
-                0.018,
-                0.54,
-                Color.FromArgb(170, 92, 230, 130));
+            var highlight = CreateBox(
+                new Point3D(center.X, BoardTopY + TileHeight + 0.015, center.Z),
+                0.55,
+                0.02,
+                0.55,
+                Color.FromArgb(180, 80, 255, 120));
 
             _moveHighlights.Add(highlight);
             Scene.Children.Add(highlight);
@@ -215,12 +184,12 @@ public sealed class Board3DViewModel
 
         var center = GetSquareCenter(file, rank);
 
-        _selectionHighlight = CreateHighlightPlate(
-            new Point3D(center.X, BoardTopY + TileHeight + 0.018, center.Z),
+        _selectionHighlight = CreateBox(
+            new Point3D(center.X, BoardTopY + TileHeight + 0.02, center.Z),
             0.92,
-            0.028,
+            0.03,
             0.92,
-            Color.FromArgb(165, 80, 170, 255));
+            Color.FromArgb(180, 80, 180, 255));
 
         Scene.Children.Add(_selectionHighlight);
     }
@@ -294,10 +263,7 @@ public sealed class Board3DViewModel
         double deltaX = to.X - from.X;
         double deltaZ = to.Z - from.Z;
 
-        var translates = piece.Models
-            .Select(EnsureTranslateTransform)
-            .ToList();
-
+        var translates = piece.Models.Select(EnsureTranslateTransform).ToList();
         foreach (var translate in translates)
         {
             translate.OffsetX = 0;
@@ -305,35 +271,11 @@ public sealed class Board3DViewModel
             translate.OffsetZ = 0;
         }
 
-        var duration = TimeSpan.FromMilliseconds(240);
+        var duration = TimeSpan.FromMilliseconds(220);
 
-        var animX = new DoubleAnimation
-        {
-            From = 0,
-            To = deltaX,
-            Duration = duration,
-            AccelerationRatio = 0.18,
-            DecelerationRatio = 0.82
-        };
-
-        var animY = new DoubleAnimation
-        {
-            From = 0,
-            To = 0.20,
-            Duration = TimeSpan.FromMilliseconds(120),
-            AutoReverse = true,
-            AccelerationRatio = 0.30,
-            DecelerationRatio = 0.70
-        };
-
-        var animZ = new DoubleAnimation
-        {
-            From = 0,
-            To = deltaZ,
-            Duration = duration,
-            AccelerationRatio = 0.18,
-            DecelerationRatio = 0.82
-        };
+        var animX = new DoubleAnimation { From = 0, To = deltaX, Duration = duration, AccelerationRatio = 0.2, DecelerationRatio = 0.8 };
+        var animY = new DoubleAnimation { From = 0, To = 0.20, Duration = TimeSpan.FromMilliseconds(110), AutoReverse = true, AccelerationRatio = 0.3, DecelerationRatio = 0.7 };
+        var animZ = new DoubleAnimation { From = 0, To = deltaZ, Duration = duration, AccelerationRatio = 0.2, DecelerationRatio = 0.8 };
 
         int completedCount = 0;
 
@@ -348,7 +290,6 @@ public sealed class Board3DViewModel
                 translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, null);
                 translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, null);
                 translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
-
                 translate.OffsetX = 0;
                 translate.OffsetY = 0;
                 translate.OffsetZ = 0;
@@ -362,7 +303,6 @@ public sealed class Board3DViewModel
             var localAnimX = animX.Clone();
             var localAnimY = animY.Clone();
             var localAnimZ = animZ.Clone();
-
             localAnimZ.Completed += (_, _) => HandleCompleted();
 
             translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, localAnimX);
@@ -379,17 +319,11 @@ public sealed class Board3DViewModel
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
         var moves = _boardState.GenerateLegalMovesFor(from);
 
-        var matchingMoves = moves
-            .Where(m => m.To.File == file && m.To.Rank == rank)
-            .ToList();
-
+        var matchingMoves = moves.Where(m => m.To.File == file && m.To.Rank == rank).ToList();
         if (matchingMoves.Count == 0)
             return false;
 
-        var selectedMove = matchingMoves
-            .FirstOrDefault(m => m.Promotion == CorePieceType.Queen)
-            ?? matchingMoves[0];
-
+        var selectedMove = matchingMoves.FirstOrDefault(m => m.Promotion == CorePieceType.Queen) ?? matchingMoves[0];
         _boardState.MakeMove(selectedMove);
         RefreshPiecesFromBoardState();
         SelectedPiece = null;
@@ -434,19 +368,13 @@ public sealed class Board3DViewModel
         if (selectedMove == null)
             return false;
 
-        AnimatePieceToSquare(
-            SelectedPiece,
-            from.File,
-            from.Rank,
-            file,
-            rank,
-            () =>
-            {
-                _boardState.MakeMove(selectedMove);
-                RefreshPiecesFromBoardState();
-                SelectedPiece = null;
-                onCompleted?.Invoke();
-            });
+        AnimatePieceToSquare(SelectedPiece, from.File, from.Rank, file, rank, () =>
+        {
+            _boardState.MakeMove(selectedMove);
+            RefreshPiecesFromBoardState();
+            SelectedPiece = null;
+            onCompleted?.Invoke();
+        });
 
         return true;
     }
@@ -467,19 +395,13 @@ public sealed class Board3DViewModel
         if (selectedMove == null)
             return false;
 
-        AnimatePieceToSquare(
-            SelectedPiece,
-            from.File,
-            from.Rank,
-            file,
-            rank,
-            () =>
-            {
-                _boardState.MakeMove(selectedMove);
-                RefreshPiecesFromBoardState();
-                SelectedPiece = null;
-                onCompleted?.Invoke();
-            });
+        AnimatePieceToSquare(SelectedPiece, from.File, from.Rank, file, rank, () =>
+        {
+            _boardState.MakeMove(selectedMove);
+            RefreshPiecesFromBoardState();
+            SelectedPiece = null;
+            onCompleted?.Invoke();
+        });
 
         return true;
     }
@@ -516,12 +438,7 @@ public sealed class Board3DViewModel
         _ => throw new ArgumentOutOfRangeException(nameof(color), color, null)
     };
 
-    private static GeometryModel3D CreateHighlightPlate(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
-    {
-        return CreateBox(center, sizeX, sizeY, sizeZ, color, 55);
-    }
-
-    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color, byte specularAlpha = 95)
+    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
     {
         double hx = sizeX / 2.0;
         double hy = sizeY / 2.0;
@@ -550,17 +467,13 @@ public sealed class Board3DViewModel
             }
         };
 
-        var materials = new MaterialGroup();
-        materials.Children.Add(new DiffuseMaterial(new SolidColorBrush(color)));
-        materials.Children.Add(new SpecularMaterial(
-            new SolidColorBrush(Color.FromArgb(specularAlpha, 255, 255, 255)),
-            45));
+        var material = new DiffuseMaterial(new SolidColorBrush(color));
 
         return new GeometryModel3D
         {
             Geometry = mesh,
-            Material = materials,
-            BackMaterial = materials
+            Material = material,
+            BackMaterial = material
         };
     }
 }

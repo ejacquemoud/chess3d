@@ -131,6 +131,8 @@
     <DockPanel Background="{StaticResource WindowBackgroundBrush}">
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_Menu">
+                <MenuItem Header="_A propos..."
+                          Click="About_Click" />
                 <MenuItem Header="_Nouvelle partie"
                           Click="NewGame_Click" />
                 <MenuItem Header="_Quitter"
@@ -161,20 +163,17 @@
                           Click="PlayBlackMenuItem_Click" />
             </MenuItem>
 
-            <MenuItem Header="_Niveau CPU">
-                <MenuItem x:Name="CpuLevel1MenuItem"
-                          Header="_Niveau 1"
-                          IsCheckable="True"
-                          IsChecked="True"
-                          Click="CpuLevel1MenuItem_Click" />
-                <MenuItem x:Name="CpuLevel2MenuItem"
-                          Header="Niveau _2"
-                          IsCheckable="True"
-                          Click="CpuLevel2MenuItem_Click" />
-                <MenuItem x:Name="CpuLevel3MenuItem"
-                          Header="Niveau _3"
-                          IsCheckable="True"
-                          Click="CpuLevel3MenuItem_Click" />
+            <MenuItem Header="Niveau _CPU">
+                <MenuItem Header="Niveau _1" Click="CpuLevel1MenuItem_Click" />
+                <MenuItem Header="Niveau _2" Click="CpuLevel2MenuItem_Click" />
+                <MenuItem Header="Niveau _3" Click="CpuLevel3MenuItem_Click" />
+                <MenuItem Header="Niveau _4" Click="CpuLevel4MenuItem_Click" />
+                <MenuItem Header="Niveau _5" Click="CpuLevel5MenuItem_Click" />
+                <MenuItem Header="Niveau _6" Click="CpuLevel6MenuItem_Click" />
+                <MenuItem Header="Niveau _7" Click="CpuLevel7MenuItem_Click" />
+                <MenuItem Header="Niveau _8" Click="CpuLevel8MenuItem_Click" />
+                <MenuItem Header="Niveau _9" Click="CpuLevel9MenuItem_Click" />
+                <MenuItem Header="Niveau 1_0" Click="CpuLevel10MenuItem_Click" />
             </MenuItem>
         </Menu>
 
