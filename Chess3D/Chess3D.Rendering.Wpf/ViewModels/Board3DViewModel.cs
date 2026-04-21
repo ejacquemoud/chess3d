@@ -42,9 +42,10 @@ public sealed class Board3DViewModel
     {
         var group = new Model3DGroup();
 
-        group.Children.Add(new AmbientLight(Color.FromRgb(160, 160, 160)));
-        group.Children.Add(new DirectionalLight(Colors.White, new Vector3D(-1, -2, -1)));
-        group.Children.Add(new DirectionalLight(Color.FromRgb(180, 180, 180), new Vector3D(1, -1, 1)));
+        group.Children.Add(new AmbientLight(Color.FromRgb(95, 95, 95)));
+        group.Children.Add(new DirectionalLight(Color.FromRgb(255, 244, 228), new Vector3D(-1.2, -2.4, -1.0)));
+        group.Children.Add(new DirectionalLight(Color.FromRgb(110, 125, 150), new Vector3D(1.0, -0.8, 1.4)));
+        group.Children.Add(new DirectionalLight(Color.FromRgb(70, 70, 80), new Vector3D(0.2, -1.0, -1.8)));
 
         var darkSquare = Color.FromRgb(181, 136, 99);
         var lightSquare = Color.FromRgb(240, 217, 181);

@@ -38,23 +38,31 @@ public static class ChessPieceFactory
         var body = new (double Radius, double Y)[]
         {
             (0.00, 0.00),
-            (0.31, 0.02),
-            (0.30, 0.05),
-            (0.25, 0.09),
-            (0.20, 0.12),
-            (0.17, 0.18),
-            (0.13, 0.28),
-            (0.11, 0.39),
-            (0.13, 0.48),
-            (0.16, 0.55),
-            (0.10, 0.60),
-            (0.00, 0.62)
+            (0.33, 0.02),
+            (0.31, 0.05),
+            (0.26, 0.09),
+            (0.21, 0.13),
+            (0.18, 0.18),
+            (0.15, 0.25),
+            (0.12, 0.36),
+            (0.11, 0.46),
+            (0.14, 0.54),
+            (0.09, 0.60),
+            (0.07, 0.63),
+            (0.00, 0.64)
         };
 
         return new()
         {
             CreateLathedSolid(body, c, color, DefaultSlices),
-            CreateSphere(new Point3D(c.X, c.Y + 0.70, c.Z), 0.11, color, SphereSlices, SphereStacks)
+            CreateLathedSolid(new (double Radius, double Y)[]
+            {
+                (0.00, 0.00),
+                (0.095, 0.01),
+                (0.085, 0.03),
+                (0.00, 0.05)
+            }, new Point3D(c.X, c.Y + 0.61, c.Z), color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 0.73, c.Z), 0.105, color, SphereSlices, SphereStacks)
         };
     }
 
@@ -63,16 +71,17 @@ public static class ChessPieceFactory
         var body = new (double Radius, double Y)[]
         {
             (0.00, 0.00),
-            (0.33, 0.02),
-            (0.31, 0.06),
-            (0.25, 0.10),
-            (0.21, 0.16),
-            (0.19, 0.30),
-            (0.19, 0.52),
-            (0.21, 0.62),
-            (0.25, 0.69),
-            (0.24, 0.74),
-            (0.00, 0.74)
+            (0.34, 0.02),
+            (0.32, 0.06),
+            (0.26, 0.10),
+            (0.22, 0.16),
+            (0.20, 0.28),
+            (0.19, 0.44),
+            (0.19, 0.58),
+            (0.22, 0.66),
+            (0.27, 0.72),
+            (0.25, 0.77),
+            (0.00, 0.78)
         };
 
         var models = new List<GeometryModel3D>
@@ -81,7 +90,7 @@ public static class ChessPieceFactory
         };
 
         int crenelCount = 6;
-        double crenelRadius = 0.265;
+        double crenelRadius = 0.245;
 
         for (int i = 0; i < crenelCount; i++)
         {
@@ -90,12 +99,21 @@ public static class ChessPieceFactory
             double z = c.Z + crenelRadius * Math.Sin(angle);
 
             models.Add(CreateBox(
-                new Point3D(x, c.Y + 0.79, z),
-                0.085,
-                0.10,
-                0.10,
+                new Point3D(x, c.Y + 0.82, z),
+                0.072,
+                0.09,
+                0.08,
                 color));
         }
+
+        models.Add(CreateLathedSolid(new (double Radius, double Y)[]
+        {
+            (0.00, 0.00),
+            (0.24, 0.01),
+            (0.255, 0.03),
+            (0.24, 0.05),
+            (0.00, 0.06)
+        }, new Point3D(c.X, c.Y + 0.74, c.Z), color, DefaultSlices));
 
         return models;
     }
@@ -103,28 +121,48 @@ public static class ChessPieceFactory
     private static List<GeometryModel3D> CreateKnight(Point3D c, Color color)
     {
         var models = new List<GeometryModel3D>
+    {
+        CreateLathedSolid(new (double Radius, double Y)[]
         {
-            CreateLathedSolid(new (double Radius, double Y)[]
-            {
-                (0.00, 0.00),
-                (0.33, 0.02),
-                (0.30, 0.06),
-                (0.23, 0.10),
-                (0.19, 0.17),
-                (0.17, 0.24),
-                (0.16, 0.31),
-                (0.00, 0.33)
-            }, c, color, DefaultSlices),
+            (0.00, 0.00),
+            (0.34, 0.02),
+            (0.32, 0.06),
+            (0.26, 0.10),
+            (0.22, 0.16),
+            (0.19, 0.24),
+            (0.17, 0.32),
+            (0.16, 0.40),
+            (0.00, 0.42)
+        }, c, color, DefaultSlices),
 
-            CreateBox(new Point3D(c.X, c.Y + 0.49, c.Z), 0.22, 0.30, 0.27, color),
-            CreateBox(new Point3D(c.X + 0.05, c.Y + 0.65, c.Z), 0.18, 0.20, 0.24, color),
-            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.80, c.Z), 0.14, 0.16, 0.18, color),
-            CreateBox(new Point3D(c.X - 0.03, c.Y + 0.61, c.Z), 0.08, 0.30, 0.18, color),
-            CreateBox(new Point3D(c.X + 0.03, c.Y + 0.92, c.Z), 0.05, 0.12, 0.08, color),
-            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.95, c.Z), 0.04, 0.10, 0.06, color),
-            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.72, c.Z + 0.08), 0.025, 0.025, 0.025, color),
-            CreateBox(new Point3D(c.X + 0.11, c.Y + 0.72, c.Z - 0.08), 0.025, 0.025, 0.025, color)
-        };
+        CreateLathedSolid(new (double Radius, double Y)[]
+        {
+            (0.00, 0.00),
+            (0.18, 0.02),
+            (0.19, 0.08),
+            (0.17, 0.12),
+            (0.12, 0.16),
+            (0.00, 0.18)
+        }, new Point3D(c.X + 0.02, c.Y + 0.39, c.Z), color, DefaultSlices)
+    };
+
+        models.Add(CreateBox(new Point3D(c.X - 0.005, c.Y + 0.50, c.Z), 0.16, 0.24, 0.20, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.030, c.Y + 0.63, c.Z), 0.15, 0.18, 0.18, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.070, c.Y + 0.75, c.Z), 0.13, 0.16, 0.15, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.095, c.Y + 0.86, c.Z), 0.11, 0.14, 0.11, color));
+
+        models.Add(CreateBox(new Point3D(c.X - 0.055, c.Y + 0.58, c.Z), 0.07, 0.28, 0.14, color));
+        models.Add(CreateBox(new Point3D(c.X - 0.010, c.Y + 0.72, c.Z), 0.06, 0.16, 0.10, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.028, c.Y + 0.82, c.Z), 0.05, 0.12, 0.08, color));
+
+        models.Add(CreateBox(new Point3D(c.X + 0.090, c.Y + 0.96, c.Z), 0.035, 0.10, 0.045, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.128, c.Y + 0.97, c.Z), 0.030, 0.08, 0.040, color));
+
+        models.Add(CreateBox(new Point3D(c.X + 0.082, c.Y + 0.74, c.Z + 0.065), 0.018, 0.018, 0.018, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.082, c.Y + 0.74, c.Z - 0.065), 0.018, 0.018, 0.018, color));
+
+        models.Add(CreateBox(new Point3D(c.X + 0.115, c.Y + 0.58, c.Z), 0.045, 0.08, 0.09, color));
+        models.Add(CreateBox(new Point3D(c.X + 0.145, c.Y + 0.67, c.Z), 0.028, 0.05, 0.07, color));
 
         return models;
     }
@@ -261,15 +299,15 @@ public static class ChessPieceFactory
             {
                 int a = i * ringSize + s;
                 int b = a + 1;
-                int c = (i + 1) * ringSize + s;
-                int d = c + 1;
+                int cc = (i + 1) * ringSize + s;
+                int d = cc + 1;
 
                 mesh.TriangleIndices.Add(a);
-                mesh.TriangleIndices.Add(c);
+                mesh.TriangleIndices.Add(cc);
                 mesh.TriangleIndices.Add(b);
 
                 mesh.TriangleIndices.Add(b);
-                mesh.TriangleIndices.Add(c);
+                mesh.TriangleIndices.Add(cc);
                 mesh.TriangleIndices.Add(d);
             }
         }

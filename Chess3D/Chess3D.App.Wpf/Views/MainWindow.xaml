@@ -22,7 +22,7 @@
         <SolidColorBrush x:Key="PressedBrush" Color="#243649" />
         <SolidColorBrush x:Key="AccentBrush" Color="#78B7FF" />
         <SolidColorBrush x:Key="AccentSoftBrush" Color="#183149" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E7EDF6" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#D6DEE8" />
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A9B5C4" />
         <SolidColorBrush x:Key="TextDisabledBrush" Color="#6A7684" />
         <SolidColorBrush x:Key="SeparatorBrush" Color="#2A3A4A" />
