@@ -4,27 +4,178 @@
         Title="Chess 3D"
         Height="900"
         Width="1400"
-        Background="#111111"
-        Foreground="White"
+        Background="#0A0F16"
+        Foreground="#D8DEE9"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
 
-    <DockPanel LastChildFill="True">
+    <Window.Resources>
+        <!-- Palette sobre -->
+        <SolidColorBrush x:Key="WindowBgBrush" Color="#0A0F16" />
+        <SolidColorBrush x:Key="ChromeBrush" Color="#0D131B" />
+        <SolidColorBrush x:Key="ChromeBrush2" Color="#101720" />
+        <SolidColorBrush x:Key="PopupBrush" Color="#111923" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#1B2633" />
+        <SolidColorBrush x:Key="SoftBorderBrush" Color="#223041" />
+        <SolidColorBrush x:Key="HoverBrush" Color="#16202C" />
+        <SolidColorBrush x:Key="PressedBrush" Color="#1A2634" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#D8DEE9" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#9AA7B7" />
+        <SolidColorBrush x:Key="TextDisabledBrush" Color="#627080" />
+        <SolidColorBrush x:Key="SeparatorBrush" Color="#223041" />
+        <SolidColorBrush x:Key="ViewportBorderBrush" Color="#1C2734" />
 
-        <Menu DockPanel.Dock="Top"
-              Background="#1E1E1E"
-              Foreground="White">
+        <!-- Menu -->
+        <Style TargetType="{x:Type Menu}">
+            <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
 
+        <!-- Separator -->
+        <Style TargetType="{x:Type Separator}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Separator}">
+                        <Border Height="1"
+                                Margin="8,4"
+                                Background="{StaticResource SeparatorBrush}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- StatusBar -->
+        <Style TargetType="{x:Type StatusBar}">
+            <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1,1,1,0" />
+            <Setter Property="Padding" Value="6,2" />
+        </Style>
+
+        <Style TargetType="{x:Type StatusBarItem}">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Padding" Value="2,0" />
+        </Style>
+
+        <!-- Textes status bar -->
+        <Style x:Key="StatusPrimaryTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="StatusMutedTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- MenuItem -->
+        <Style TargetType="{x:Type MenuItem}">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <ContentPresenter Grid.Column="1"
+                                                  Margin="8,1,10,1"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"
+                                                  ContentSource="Header" />
+
+                                <Popup x:Name="PART_Popup"
+                                       Grid.ColumnSpan="3"
+                                       AllowsTransparency="True"
+                                       Focusable="False"
+                                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Placement="Bottom"
+                                       PopupAnimation="Fade">
+                                    <Border Background="{StaticResource PopupBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}"
+                                            BorderThickness="1"
+                                            Padding="3"
+                                            SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True"
+                                                    KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Role" Value="TopLevelHeader">
+                                <Setter TargetName="PART_Popup" Property="Placement" Value="Bottom" />
+                                <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
+                            </Trigger>
+
+                            <Trigger Property="Role" Value="TopLevelItem">
+                                <Setter Property="Background" Value="{StaticResource ChromeBrush}" />
+                            </Trigger>
+
+                            <Trigger Property="Role" Value="SubmenuHeader">
+                                <Setter TargetName="PART_Popup" Property="Placement" Value="Right" />
+                                <Setter Property="Background" Value="{StaticResource PopupBrush}" />
+                            </Trigger>
+
+                            <Trigger Property="Role" Value="SubmenuItem">
+                                <Setter Property="Background" Value="{StaticResource PopupBrush}" />
+                            </Trigger>
+
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource HoverBrush}" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource SoftBorderBrush}" />
+                            </Trigger>
+
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource PressedBrush}" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource SoftBorderBrush}" />
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel LastChildFill="True"
+               Background="{StaticResource WindowBgBrush}">
+
+        <Menu DockPanel.Dock="Top">
             <MenuItem Header="_Partie">
                 <MenuItem Header="_Nouvelle partie"
                           Click="NewGame_Click" />
                 <Separator />
                 <MenuItem x:Name="VersusCpuMenuItem"
-                          Header="Contre le _CPU"
+                          Header="Jouer contre le _CPU"
                           IsCheckable="True"
                           Click="VersusCpuMenuItem_Click" />
                 <MenuItem x:Name="LocalTwoPlayersMenuItem"
-                          Header="_2 joueurs locaux"
+                          Header="Mode _2 joueurs locaux"
                           IsCheckable="True"
                           Click="LocalTwoPlayersMenuItem_Click" />
                 <Separator />
@@ -60,42 +211,50 @@
             </MenuItem>
         </Menu>
 
-        <StatusBar DockPanel.Dock="Bottom"
-                   Background="#1E1E1E"
-                   Foreground="White">
+        <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
                 <TextBlock x:Name="StatusTextBlock"
+                           Style="{StaticResource StatusPrimaryTextStyle}"
                            Text="Tour : Blancs" />
             </StatusBarItem>
 
             <Separator />
 
             <StatusBarItem>
-                <TextBlock x:Name="ViewModeTextBlock"
-                           Text="Mode : CPU — Vous jouez Blancs — Niveau 3" />
+                <TextBlock x:Name="SelectionTextBlock"
+                           Style="{StaticResource StatusMutedTextStyle}"
+                           Text="Aucune sélection" />
             </StatusBarItem>
 
             <Separator />
 
             <StatusBarItem>
-                <TextBlock x:Name="SelectionTextBlock"
-                           Text="Aucune sélection" />
+                <TextBlock x:Name="ViewModeTextBlock"
+                           Style="{StaticResource StatusMutedTextStyle}"
+                           Text="Mode : CPU — Vous jouez Blancs — Niveau 3" />
             </StatusBarItem>
         </StatusBar>
 
-        <Grid x:Name="Root"
-              Background="Black"
-              MouseLeftButtonDown="Root_MouseLeftButtonDown">
-            <Viewport3D x:Name="Viewport"
-                        ClipToBounds="True">
-                <Viewport3D.Camera>
-                    <PerspectiveCamera x:Name="Camera"
-                                       Position="0,10,13"
-                                       LookDirection="0,-8,-13"
-                                       UpDirection="0,1,0"
-                                       FieldOfView="60" />
-                </Viewport3D.Camera>
-            </Viewport3D>
-        </Grid>
+        <Border Margin="8"
+                CornerRadius="10"
+                BorderBrush="{StaticResource ViewportBorderBrush}"
+                BorderThickness="1"
+                Background="Black"
+                SnapsToDevicePixels="True">
+            <Grid x:Name="Root"
+                  Background="Black"
+                  MouseLeftButtonDown="Root_MouseLeftButtonDown">
+                <Viewport3D x:Name="Viewport"
+                            ClipToBounds="True">
+                    <Viewport3D.Camera>
+                        <PerspectiveCamera x:Name="Camera"
+                                           Position="0,10,13"
+                                           LookDirection="0,-8,-13"
+                                           UpDirection="0,1,0"
+                                           FieldOfView="60" />
+                    </Viewport3D.Camera>
+                </Viewport3D>
+            </Grid>
+        </Border>
     </DockPanel>
 </Window>
