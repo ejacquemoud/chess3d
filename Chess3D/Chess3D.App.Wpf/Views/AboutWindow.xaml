@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="À propos"
         Width="520"
-        Height="360"
+        Height="395"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowStyle="ToolWindow"
@@ -15,12 +15,16 @@
         <SolidColorBrush x:Key="WindowBgBrush" Color="#0B1016" />
         <SolidColorBrush x:Key="CardBrush" Color="#121A24" />
         <SolidColorBrush x:Key="CardBorderBrush" Color="#243242" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#101722" />
+        <SolidColorBrush x:Key="PanelBorderBrush" Color="#1E2B39" />
         <SolidColorBrush x:Key="AccentBrush" Color="#79B8FF" />
         <SolidColorBrush x:Key="AccentSoftBrush" Color="#17314A" />
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E8EDF5" />
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#AAB5C3" />
+        <SolidColorBrush x:Key="TextMutedBrush" Color="#7F8B98" />
         <SolidColorBrush x:Key="ButtonBrush" Color="#172231" />
         <SolidColorBrush x:Key="ButtonHoverBrush" Color="#1F2E41" />
+        <SolidColorBrush x:Key="ButtonPressedBrush" Color="#223247" />
         <SolidColorBrush x:Key="ButtonBorderBrush" Color="#2A3C51" />
 
         <Style TargetType="{x:Type TextBlock}">
@@ -38,6 +42,17 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
+        <Style x:Key="TitleTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="FooterTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="FontSize" Value="12.5" />
+        </Style>
+
         <Style TargetType="{x:Type Button}">
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
             <Setter Property="Background" Value="{StaticResource ButtonBrush}" />
@@ -45,6 +60,8 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="16,10" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="13.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
@@ -52,11 +69,11 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="10"
+                                CornerRadius="11"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
-                                              Margin="2" />
+                                              Margin="4,2" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -64,7 +81,11 @@
                                 <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="RootBorder" Property="Opacity" Value="0.92" />
+                                <Setter TargetName="RootBorder" Property="Background" Value="{StaticResource ButtonPressedBrush}" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -74,23 +95,30 @@
     </Window.Resources>
 
     <Grid Background="{StaticResource WindowBgBrush}">
-        <Border Margin="20"
+        <Border Margin="16"
                 Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource CardBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="18"
-                Padding="22">
+                Padding="18">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18"
+                                  ShadowDepth="0"
+                                  Opacity="0.18"
+                                  Color="#000000" />
+            </Border.Effect>
+
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="18" />
+                    <RowDefinition Height="16" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
+                    <RowDefinition Height="16" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- En-tête -->
-                <Grid>
+                <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="72" />
                         <ColumnDefinition Width="*" />
@@ -104,108 +132,72 @@
                             BorderThickness="1"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top">
-                                            <Image x:Name="AppIconImage"
-                               Width="28"
-                               Height="28"
-                               Stretch="Uniform"
-                               HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
+                        <Grid>
+                            <Image x:Name="AppIconImage"
+                                   Width="28"
+                                   Height="28"
+                                   Stretch="Uniform"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        </Grid>
                     </Border>
 
-                    <StackPanel Grid.Column="1">
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center">
                         <TextBlock Text="Chess 3D"
-                                   FontSize="28"
-                                   FontWeight="SemiBold" />
+                                   Style="{StaticResource TitleTextStyle}" />
+
                         <TextBlock Text="Application d'échecs 3D en WPF"
                                    Margin="0,4,0,0"
                                    Style="{StaticResource CaptionTextStyle}" />
-                        <TextBlock x:Name="VersionTextBlock"
-                                   Text="Version"
-                                   Margin="0,8,0,0"
-                                   Style="{StaticResource CaptionTextStyle}" />
+
+                        <Border Margin="0,10,0,0"
+                                Padding="10,5"
+                                Background="#132131"
+                                BorderBrush="#2C4157"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                HorizontalAlignment="Left">
+                            <TextBlock x:Name="VersionTextBlock"
+                                       Text="Version"
+                                       Style="{StaticResource CaptionTextStyle}" />
+                        </Border>
                     </StackPanel>
                 </Grid>
 
                 <!-- Description -->
                 <Border Grid.Row="2"
-                        Background="#101722"
-                        BorderBrush="#1E2B39"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource PanelBorderBrush}"
                         BorderThickness="1"
                         CornerRadius="14"
                         Padding="16">
                     <TextBlock TextWrapping="Wrap"
                                LineHeight="22"
                                Style="{StaticResource CaptionTextStyle}">
-                        Chess 3D est une application d'échecs avec affichage 3D, partie locale et jeu contre le CPU via Stockfish (10 niveaux de difficulté).
+                        Chess 3D est une application d'échecs avec affichage 3D intégral, partie locale et jeu contre le CPU via Stockfish (10 niveaux de difficulté).
+                        L'application est gratuite et open-source 😊
                     </TextBlock>
                 </Border>
 
-                <!-- Infos -->
-                <Grid Grid.Row="3"
-                      Margin="0,18,0,18">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="16" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                <!-- Footer intégré -->
+                <Border Grid.Row="4"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource PanelBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="12,10">
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="© 2026 Etienne Jacquemoud"
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource FooterTextStyle}" />
 
-                    <Border Background="#101722"
-                            BorderBrush="#1E2B39"
-                            BorderThickness="1"
-                            CornerRadius="14"
-                            Padding="16">
-                        <StackPanel>
-                            <TextBlock Text="Technologies"
-                                       Style="{StaticResource CaptionTextStyle}" />
-                            <TextBlock Text=".NET / WPF"
-                                       Margin="0,6,0,0"
-                                       Style="{StaticResource ValueTextStyle}" />
-
-                            <TextBlock Text="Moteur"
-                                       Margin="0,14,0,0"
-                                       Style="{StaticResource CaptionTextStyle}" />
-                            <TextBlock Text="Stockfish"
-                                       Margin="0,6,0,0"
-                                       Style="{StaticResource ValueTextStyle}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="2"
-                            Background="#101722"
-                            BorderBrush="#1E2B39"
-                            BorderThickness="1"
-                            CornerRadius="14"
-                            Padding="16">
-                        <StackPanel>
-                            <TextBlock Text="Fonctionnalités"
-                                       Style="{StaticResource CaptionTextStyle}" />
-                            <TextBlock Text="Partie locale, CPU, affichage 3D"
-                                       Margin="0,6,0,0"
-                                       TextWrapping="Wrap"
-                                       Style="{StaticResource ValueTextStyle}" />
-
-                            <TextBlock Text="Interface"
-                                       Margin="0,14,0,0"
-                                       Style="{StaticResource CaptionTextStyle}" />
-                            <TextBlock Text="Thème sombre moderne"
-                                       Margin="0,6,0,0"
-                                       Style="{StaticResource ValueTextStyle}" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <!-- Actions -->
-                <DockPanel Grid.Row="4"
-                           LastChildFill="False">
-                    <TextBlock Text="© 2026 Etienne Jacquemoud"
-                               VerticalAlignment="Center"
-                               Style="{StaticResource CaptionTextStyle}" />
-
-                    <Button Content="Fermer"
-                            Width="110"
-                            DockPanel.Dock="Right"
-                            Click="CloseButton_Click" />
-                </DockPanel>
+                        <Button Content="Fermer"
+                                Width="112"
+                                DockPanel.Dock="Right"
+                                Click="CloseButton_Click" />
+                    </DockPanel>
+                </Border>
             </Grid>
         </Border>
     </Grid>
