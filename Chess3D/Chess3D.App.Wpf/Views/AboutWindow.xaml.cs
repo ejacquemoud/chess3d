@@ -22,7 +22,7 @@ public partial class AboutWindow : Window
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         string versionText = version is null
             ? "Version inconnue"
-            : $"Version {version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+            : $"Version {version.Major}.{version.Minor}.{version.Build}.{version.Revision} beta";
 
         VersionTextBlock.Text = versionText;
 

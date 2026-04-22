@@ -100,7 +100,7 @@
                 BorderBrush="{StaticResource CardBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="18"
-                Padding="18">
+                Padding="18,18,18,20">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="18"
                                   ShadowDepth="0"

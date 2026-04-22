@@ -667,4 +667,10 @@ public partial class MainWindow : Window
         UpdateMenuChecks();
         await StartNewGameAsync();
     }
+
+    private void ResetCamera_Click(object sender, RoutedEventArgs e)
+    {
+        ResetCameraForCurrentMode();
+        RefreshStatusBar("Caméra réinitialisée");
+    }
 }
