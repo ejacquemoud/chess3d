@@ -23,6 +23,7 @@ public sealed class Board3DViewModel
     private readonly List<PieceVisual> _pieces = new();
 
     private GeometryModel3D? _selectionHighlight;
+    private bool _isAnimatingMove;
 
     public PieceVisual? SelectedPiece { get; private set; }
     public List<(int file, int rank)> CurrentMoves { get; } = new();
@@ -118,6 +119,10 @@ public sealed class Board3DViewModel
         foreach (var model in models)
         {
             piece.Models.Add(model);
+
+            var translate = EnsureTranslateTransform(model);
+            piece.TranslateTransforms.Add(translate);
+
             _modelToPiece[model] = piece;
             Scene.Children.Add(model);
         }
@@ -127,9 +132,29 @@ public sealed class Board3DViewModel
 
     public bool TrySelectPiece(Model3D model)
     {
+        if (_isAnimatingMove)
+            return false;
+
         if (!_modelToPiece.TryGetValue(model, out var piece))
             return false;
 
+        return TrySelectPieceInternal(piece);
+    }
+
+    public bool TrySelectPieceAt(int file, int rank)
+    {
+        if (_isAnimatingMove)
+            return false;
+
+        var piece = _pieces.FirstOrDefault(p => p.File == file && p.Rank == rank);
+        if (piece == null)
+            return false;
+
+        return TrySelectPieceInternal(piece);
+    }
+
+    private bool TrySelectPieceInternal(PieceVisual piece)
+    {
         var from = new Square(piece.File, piece.Rank);
         var moves = _boardState.GenerateLegalMovesFor(from);
 
@@ -256,65 +281,96 @@ public sealed class Board3DViewModel
         return translateTransform;
     }
 
-    private void AnimatePieceToSquare(PieceVisual piece, int fromFile, int fromRank, int toFile, int toRank, Action completed)
+    private void AnimatePieceToSquare(PieceVisual piece, int fromFile, int fromRank, int toFile, int toRank, Action? completed)
     {
+        if (piece.IsAnimating)
+            return;
+
+        piece.IsAnimating = true;
+        _isAnimatingMove = true;
+
         var from = GetSquareCenter(fromFile, fromRank);
         var to = GetSquareCenter(toFile, toRank);
 
         double deltaX = to.X - from.X;
         double deltaZ = to.Z - from.Z;
 
-        var translates = piece.Models.Select(EnsureTranslateTransform).ToList();
-        foreach (var translate in translates)
+        foreach (var translate in piece.TranslateTransforms)
         {
+            translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, null);
+            translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, null);
+            translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
+
             translate.OffsetX = 0;
             translate.OffsetY = 0;
             translate.OffsetZ = 0;
         }
 
-        var duration = TimeSpan.FromMilliseconds(220);
-
-        var animX = new DoubleAnimation { From = 0, To = deltaX, Duration = duration, AccelerationRatio = 0.2, DecelerationRatio = 0.8 };
-        var animY = new DoubleAnimation { From = 0, To = 0.20, Duration = TimeSpan.FromMilliseconds(110), AutoReverse = true, AccelerationRatio = 0.3, DecelerationRatio = 0.7 };
-        var animZ = new DoubleAnimation { From = 0, To = deltaZ, Duration = duration, AccelerationRatio = 0.2, DecelerationRatio = 0.8 };
+        var duration = TimeSpan.FromMilliseconds(300);
 
         int completedCount = 0;
+        int expectedCount = piece.TranslateTransforms.Count;
 
         void HandleCompleted()
         {
             completedCount++;
-            if (completedCount < translates.Count)
+            if (completedCount < expectedCount)
                 return;
 
-            foreach (var translate in translates)
+            foreach (var translate in piece.TranslateTransforms)
             {
                 translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, null);
                 translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, null);
                 translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
+
                 translate.OffsetX = 0;
                 translate.OffsetY = 0;
                 translate.OffsetZ = 0;
             }
 
+            piece.IsAnimating = false;
+            _isAnimatingMove = false;
             completed?.Invoke();
         }
 
-        foreach (var translate in translates)
+        foreach (var translate in piece.TranslateTransforms)
         {
-            var localAnimX = animX.Clone();
-            var localAnimY = animY.Clone();
-            var localAnimZ = animZ.Clone();
-            localAnimZ.Completed += (_, _) => HandleCompleted();
+            var animX = new DoubleAnimation
+            {
+                From = 0,
+                To = deltaX,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
 
-            translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, localAnimX);
-            translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, localAnimY);
-            translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, localAnimZ);
+            var animZ = new DoubleAnimation
+            {
+                From = 0,
+                To = deltaZ,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            var animY = new DoubleAnimationUsingKeyFrames
+            {
+                Duration = duration
+            };
+
+            animY.KeyFrames.Add(new EasingDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            animY.KeyFrames.Add(new EasingDoubleKeyFrame(0.10, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(120))));
+            animY.KeyFrames.Add(new EasingDoubleKeyFrame(0.0, KeyTime.FromTimeSpan(duration)));
+
+            animZ.Completed += (_, _) => HandleCompleted();
+
+            translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, animX);
+            translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, animY);
+            translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, animZ);
         }
     }
 
     public bool TryMoveSelectedPieceTo(int file, int rank)
     {
-        if (SelectedPiece == null)
+        if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
@@ -333,7 +389,7 @@ public sealed class Board3DViewModel
 
     public bool TryMoveSelectedPieceTo(int file, int rank, CorePieceType promotion)
     {
-        if (SelectedPiece == null)
+        if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
@@ -353,9 +409,9 @@ public sealed class Board3DViewModel
         return true;
     }
 
-    public bool TryAnimateMoveSelectedPieceTo(int file, int rank, Action onCompleted)
+    public bool TryAnimateMoveSelectedPieceTo(int file, int rank, Action? onCompleted)
     {
-        if (SelectedPiece == null)
+        if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
@@ -369,7 +425,11 @@ public sealed class Board3DViewModel
         if (selectedMove == null)
             return false;
 
-        AnimatePieceToSquare(SelectedPiece, from.File, from.Rank, file, rank, () =>
+        var piece = SelectedPiece;
+
+        ClearHighlights();
+
+        AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
         {
             _boardState.MakeMove(selectedMove);
             RefreshPiecesFromBoardState();
@@ -380,9 +440,9 @@ public sealed class Board3DViewModel
         return true;
     }
 
-    public bool TryAnimateMoveSelectedPieceTo(int file, int rank, CorePieceType promotion, Action onCompleted)
+    public bool TryAnimateMoveSelectedPieceTo(int file, int rank, CorePieceType promotion, Action? onCompleted)
     {
-        if (SelectedPiece == null)
+        if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
@@ -396,7 +456,11 @@ public sealed class Board3DViewModel
         if (selectedMove == null)
             return false;
 
-        AnimatePieceToSquare(SelectedPiece, from.File, from.Rank, file, rank, () =>
+        var piece = SelectedPiece;
+
+        ClearHighlights();
+
+        AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
         {
             _boardState.MakeMove(selectedMove);
             RefreshPiecesFromBoardState();
@@ -409,7 +473,7 @@ public sealed class Board3DViewModel
 
     public bool RequiresPromotion(int file, int rank)
     {
-        if (SelectedPiece == null)
+        if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);

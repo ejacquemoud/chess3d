@@ -14,6 +14,7 @@ using Chess3D.Core.Enums;
 using Chess3D.Core.Models;
 using Chess3D.Engine.Stockfish.Services;
 using Chess3D.Rendering.Wpf.ViewModels;
+using Chess3D.App.Wpf.Helpers;
 
 namespace Chess3D.App.Wpf.Views;
 
@@ -162,8 +163,7 @@ public partial class MainWindow : Window
         {
             if (_boardViewModel.TrySelectPiece(geometryModel))
             {
-                var piece = _boardViewModel.SelectedPiece!;
-                UpdateSelectionText($"Sélection : {piece.PieceType} {piece.PieceColor} en {(char)('a' + piece.File)}{piece.Rank + 1}");
+                UpdateSelectionFromCurrentPiece();
                 RefreshStatusBar();
                 return;
             }
@@ -173,7 +173,7 @@ public partial class MainWindow : Window
         if (!_boardViewModel.TryGetSquareFromHit(hitPoint, out int file, out int rank))
             return;
 
-        bool movePlayed = false;
+        string targetSquare = $"{(char)('a' + file)}{rank + 1}";
 
         if (_boardViewModel.RequiresPromotion(file, rank))
         {
@@ -184,44 +184,69 @@ public partial class MainWindow : Window
 
             bool? dialogResult = promotionWindow.ShowDialog();
 
-            if (dialogResult == true && promotionWindow.SelectedPromotion.HasValue)
-            {
-                movePlayed = _boardViewModel.TryMoveSelectedPieceTo(file, rank, promotionWindow.SelectedPromotion.Value);
-
-                if (movePlayed)
-                {
-                    UpdateSelectionText("Aucune sélection");
-                    RefreshStatusBar($"Promotion vers {(char)('a' + file)}{rank + 1}");
-                    UpdateCameraAfterMove();
-                }
-            }
-
-            if (!movePlayed)
+            if (dialogResult != true || !promotionWindow.SelectedPromotion.HasValue)
             {
                 RefreshStatusBar("Promotion annulée");
                 return;
             }
-        }
-        else
-        {
-            movePlayed = _boardViewModel.TryMoveSelectedPieceTo(file, rank);
+
+            bool movePlayed = _boardViewModel.TryAnimateMoveSelectedPieceTo(
+                file,
+                rank,
+                promotionWindow.SelectedPromotion.Value,
+                () =>
+                {
+                    Dispatcher.Invoke(async () =>
+                    {
+                        await AfterAnimatedMoveAsync($"Promotion vers {targetSquare}");
+                    });
+                });
 
             if (!movePlayed)
-            {
-                RefreshStatusBar($"Coup invalide vers {(char)('a' + file)}{rank + 1}");
-                return;
-            }
+                RefreshStatusBar($"Coup invalide vers {targetSquare}");
 
-            UpdateSelectionText("Aucune sélection");
-            RefreshStatusBar($"Déplacement vers {(char)('a' + file)}{rank + 1}");
-            UpdateCameraAfterMove();
+            return;
         }
+
+        bool normalMovePlayed = _boardViewModel.TryAnimateMoveSelectedPieceTo(
+            file,
+            rank,
+            () =>
+            {
+                Dispatcher.Invoke(async () =>
+                {
+                    await AfterAnimatedMoveAsync($"Déplacement vers {targetSquare}");
+                });
+            });
+
+        if (!normalMovePlayed)
+            RefreshStatusBar($"Coup invalide vers {targetSquare}");
+    }
+
+    private void UpdateSelectionFromCurrentPiece()
+    {
+        var piece = _boardViewModel.SelectedPiece;
+        if (piece == null)
+        {
+            UpdateSelectionText("Aucune sélection");
+            return;
+        }
+
+        string pieceName = ChessDisplayText.ToFrench(piece.PieceType);
+        string pieceColor = ChessDisplayText.ToFrench(piece.PieceColor);
+        UpdateSelectionText($"Sélection : {pieceName} {pieceColor} en {(char)('a' + piece.File)}{piece.Rank + 1}");
+    }
+
+    private async Task AfterAnimatedMoveAsync(string statusMessage)
+    {
+        UpdateSelectionText("Aucune sélection");
+        UpdateCameraAfterMove();
 
         if (ShowGameStateIfNeeded())
             return;
 
-        RefreshStatusBar();
-        _ = TryPlayCpuMoveAsync();
+        RefreshStatusBar(statusMessage);
+        await TryPlayCpuMoveAsync();
     }
 
     private bool ShowGameStateIfNeeded()
@@ -239,22 +264,20 @@ public partial class MainWindow : Window
                     _isGameOver = true;
                     string winner = _boardState.SideToMove == PieceColor.White ? "Noirs" : "Blancs";
                     RefreshStatusBar($"Échec et mat — victoire des {winner.ToLowerInvariant()}");
-                    MessageBox.Show(
-                        $"Échec et mat !\n\nVictoire des {winner}.",
-                        "Fin de partie",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    new GameEndDialog("Fin de partie", $"Échec et mat !\n\nVictoire des {winner}.")
+                    {
+                        Owner = this
+                    }.ShowDialog();
                     return true;
                 }
 
             case GameEndState.Stalemate:
                 _isGameOver = true;
                 RefreshStatusBar("Pat — partie nulle");
-                MessageBox.Show(
-                    "Pat !\n\nLa partie est nulle.",
-                    "Fin de partie",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                new GameEndDialog("Fin de partie", "Pat !\n\nLa partie est nulle.")
+                {
+                    Owner = this
+                }.ShowDialog();
                 return true;
 
             case GameEndState.None:
@@ -286,15 +309,76 @@ public partial class MainWindow : Window
             string fen = _boardState.ToFen();
             Move cpuMove = await _stockfishClient.GetBestMoveAsync(fen, _cpuLevel, _cpuCts.Token);
 
-            _boardState.MakeMove(cpuMove);
-            _boardViewModel.RefreshPiecesFromBoardState();
-            UpdateSelectionText("Aucune sélection");
-            UpdateCameraAfterMove();
+            bool sourceSelected = _boardViewModel.TrySelectPieceAt(cpuMove.From.File, cpuMove.From.Rank);
 
-            if (ShowGameStateIfNeeded())
+            if (!sourceSelected)
+            {
+                _boardState.MakeMove(cpuMove);
+                _boardViewModel.RefreshPiecesFromBoardState();
+                UpdateSelectionText("Aucune sélection");
+                UpdateCameraAfterMove();
+
+                if (ShowGameStateIfNeeded())
+                    return;
+
+                RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
                 return;
+            }
 
-            RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+            bool movePlayed;
+
+            if (cpuMove.Promotion != PieceType.None)
+            {
+                movePlayed = _boardViewModel.TryAnimateMoveSelectedPieceTo(
+                    cpuMove.To.File,
+                    cpuMove.To.Rank,
+                    cpuMove.Promotion,
+                    () =>
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            UpdateSelectionText("Aucune sélection");
+                            UpdateCameraAfterMove();
+
+                            if (ShowGameStateIfNeeded())
+                                return;
+
+                            RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+                        });
+                    });
+            }
+            else
+            {
+                movePlayed = _boardViewModel.TryAnimateMoveSelectedPieceTo(
+                    cpuMove.To.File,
+                    cpuMove.To.Rank,
+                    () =>
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            UpdateSelectionText("Aucune sélection");
+                            UpdateCameraAfterMove();
+
+                            if (ShowGameStateIfNeeded())
+                                return;
+
+                            RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+                        });
+                    });
+            }
+
+            if (!movePlayed)
+            {
+                _boardState.MakeMove(cpuMove);
+                _boardViewModel.RefreshPiecesFromBoardState();
+                UpdateSelectionText("Aucune sélection");
+                UpdateCameraAfterMove();
+
+                if (ShowGameStateIfNeeded())
+                    return;
+
+                RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -364,9 +448,7 @@ public partial class MainWindow : Window
         if (_playVsCpu)
         {
             if (_boardState.SideToMove == _humanColor)
-            {
                 AnimateCameraToSide(_humanColor, false);
-            }
 
             return;
         }

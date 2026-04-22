@@ -57,8 +57,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Separator}">
                         <Border Height="1"
-                            Margin="14,8,14,8"
-                            Background="{StaticResource SeparatorBrush}" />
+                                Margin="14,8,14,8"
+                                Background="{StaticResource SeparatorBrush}" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -75,9 +75,12 @@
         </Style>
 
         <Style TargetType="{x:Type StatusBarItem}">
-            <Setter Property="Margin" Value="2,0" />
-            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="0" />
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="StatusPrimaryTextStyle" TargetType="{x:Type TextBlock}">
@@ -91,6 +94,24 @@
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="StatusChipBorderStyle" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="#121C27" />
+            <Setter Property="BorderBrush" Value="#243242" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+        </Style>
+
+        <Style x:Key="StatusValueOnlyTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
         <!-- MenuItem -->
@@ -108,12 +129,12 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type MenuItem}">
                         <Border x:Name="RootBorder"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="10"
-                            Margin="0"
-                            SnapsToDevicePixels="True">
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Margin="0"
+                                SnapsToDevicePixels="True">
                             <Grid x:Name="LayoutRoot" Height="30">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition x:Name="CheckColumn" Width="24" />
@@ -122,81 +143,81 @@
                                 </Grid.ColumnDefinitions>
 
                                 <Grid x:Name="CheckHost"
-                                  Grid.Column="0"
-                                  Width="24"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Visibility="Collapsed">
+                                      Grid.Column="0"
+                                      Width="24"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Visibility="Collapsed">
                                     <Border x:Name="CheckBadge"
-                                        Width="14"
-                                        Height="14"
-                                        CornerRadius="7"
-                                        Background="#162434"
-                                        BorderBrush="#274055"
-                                        BorderThickness="1">
+                                            Width="14"
+                                            Height="14"
+                                            CornerRadius="7"
+                                            Background="#162434"
+                                            BorderBrush="#274055"
+                                            BorderThickness="1">
                                         <Path x:Name="CheckGlyph"
-                                          Data="M 3 7 L 5.8 9.8 L 11 4.8"
-                                          Stroke="{StaticResource AccentBrush}"
-                                          StrokeThickness="1.8"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round"
-                                          StrokeLineJoin="Round"
-                                          Visibility="Collapsed" />
+                                              Data="M 3 7 L 5.8 9.8 L 11 4.8"
+                                              Stroke="{StaticResource AccentBrush}"
+                                              StrokeThickness="1.8"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Visibility="Collapsed" />
                                     </Border>
                                 </Grid>
 
                                 <ContentPresenter x:Name="HeaderHost"
-                                              Grid.Column="1"
-                                              Margin="6,0,6,0"
-                                              HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"
-                                              RecognizesAccessKey="True"
-                                              ContentSource="Header" />
+                                                  Grid.Column="1"
+                                                  Margin="6,0,6,0"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"
+                                                  ContentSource="Header" />
 
                                 <Path x:Name="ArrowGlyph"
-                                  Grid.Column="2"
-                                  Data="M 5 4 L 9 8 L 5 12"
-                                  Stroke="{StaticResource TextSecondaryBrush}"
-                                  StrokeThickness="1.6"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Width="12"
-                                  Height="12"
-                                  Stretch="None"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Visibility="Collapsed" />
+                                      Grid.Column="2"
+                                      Data="M 5 4 L 9 8 L 5 12"
+                                      Stroke="{StaticResource TextSecondaryBrush}"
+                                      StrokeThickness="1.6"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Width="12"
+                                      Height="12"
+                                      Stretch="None"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Visibility="Collapsed" />
 
                                 <Popup x:Name="PART_Popup"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
-                                   Placement="Bottom"
-                                   PopupAnimation="Fade">
+                                       AllowsTransparency="True"
+                                       Focusable="False"
+                                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Placement="Bottom"
+                                       PopupAnimation="Fade">
                                     <Border Background="{StaticResource PopupBrush}"
-                                        BorderBrush="{StaticResource PopupBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Margin="0,6,0,0"
-                                        SnapsToDevicePixels="True">
+                                            BorderBrush="{StaticResource PopupBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="16"
+                                            Margin="0,6,0,0"
+                                            SnapsToDevicePixels="True">
                                         <Border.Effect>
                                             <DropShadowEffect BlurRadius="22"
-                                                          ShadowDepth="0"
-                                                          Opacity="0.22"
-                                                          Color="#000000" />
+                                                              ShadowDepth="0"
+                                                              Opacity="0.22"
+                                                              Color="#000000" />
                                         </Border.Effect>
 
                                         <Grid>
                                             <Border Width="26"
-                                                HorizontalAlignment="Left"
-                                                Background="#162332"
-                                                CornerRadius="16,0,0,16"
-                                                IsHitTestVisible="False" />
+                                                    HorizontalAlignment="Left"
+                                                    Background="#162332"
+                                                    CornerRadius="16,0,0,16"
+                                                    IsHitTestVisible="False" />
 
                                             <StackPanel IsItemsHost="True"
-                                                    Margin="10"
-                                                    KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                                        Margin="10"
+                                                        KeyboardNavigation.DirectionalNavigation="Cycle" />
                                         </Grid>
                                     </Border>
                                 </Popup>
@@ -341,36 +362,30 @@
 
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock x:Name="StatusTextBlock"
-                   Style="{StaticResource StatusPrimaryTextStyle}"
-                   Text="Tour : Blancs" />
+                <Border Style="{StaticResource StatusChipBorderStyle}"
+                        Width="180">
+                    <TextBlock x:Name="StatusTextBlock"
+                               Style="{StaticResource StatusValueOnlyTextStyle}"
+                               Text="Tour : Blancs" />
+                </Border>
             </StatusBarItem>
 
-            <Border Width="1"
-            Height="14"
-            Margin="8,0"
-            Background="#223140"
-            Opacity="0.65" />
-
-            <StatusBarItem>
-                <TextBlock x:Name="SelectionTextBlock"
-                   Style="{StaticResource StatusMutedTextStyle}"
-                   Text="Aucune sélection" />
+            <StatusBarItem Margin="8,0,0,0">
+                <Border Style="{StaticResource StatusChipBorderStyle}"
+                        Width="250">
+                    <TextBlock x:Name="SelectionTextBlock"
+                               Style="{StaticResource StatusValueOnlyTextStyle}"
+                               Text="Aucune sélection" />
+                </Border>
             </StatusBarItem>
 
-            <Border Width="1"
-            Height="14"
-            Margin="8,0"
-            Background="#223140"
-            Opacity="0.65" />
-
-            <StatusBarItem HorizontalAlignment="Stretch">
-                <TextBlock x:Name="ViewModeTextBlock"
-                   MinWidth="280"
-                   HorizontalAlignment="Left"
-                   TextAlignment="Left"
-                   Style="{StaticResource StatusMutedTextStyle}"
-                   Text="Mode : 2 joueurs locaux" />
+            <StatusBarItem Margin="8,0,0,0">
+                <Border Style="{StaticResource StatusChipBorderStyle}"
+                        Width="380">
+                    <TextBlock x:Name="ViewModeTextBlock"
+                               Style="{StaticResource StatusValueOnlyTextStyle}"
+                               Text="Mode : 2 joueurs locaux" />
+                </Border>
             </StatusBarItem>
         </StatusBar>
 
@@ -389,8 +404,7 @@
                       Background="Black"
                       MouseLeftButtonDown="Root_MouseLeftButtonDown">
                     <Viewport3D x:Name="Viewport"
-                                ClipToBounds="True"
-                                Visibility="Hidden">
+                                ClipToBounds="True">
                         <Viewport3D.Camera>
                             <PerspectiveCamera x:Name="Camera"
                                                Position="0,10,13"
