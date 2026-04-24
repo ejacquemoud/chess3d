@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Chess3D.Core.Models;
 
 namespace Chess3D.Core.Interfaces;

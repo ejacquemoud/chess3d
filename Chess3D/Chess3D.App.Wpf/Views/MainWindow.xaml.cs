@@ -1,27 +1,23 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
+﻿using Chess3D.App.Wpf.Helpers;
 using Chess3D.App.Wpf.Services;
 using Chess3D.Core.Enums;
 using Chess3D.Core.Models;
 using Chess3D.Engine.Stockfish.Services;
 using Chess3D.Rendering.Wpf.ViewModels;
-using Chess3D.App.Wpf.Helpers;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace Chess3D.App.Wpf.Views;
 
 public partial class MainWindow : Window
 {
     private static readonly Point3D DefaultCameraTarget = new(0, 0.5, 0);
-    private const double DefaultCameraDistance = 13.0;
+    private const double DefaultCameraDistance = 15.0;
     private const double DefaultCameraPitch = -35.0;
     private const double WhiteYaw = 180.0;
     private const double BlackYaw = 0.0;

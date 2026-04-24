@@ -1,8 +1,7 @@
-﻿using System;
+﻿using Chess3D.Core.Enums;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
-using Chess3D.Core.Enums;
 
 namespace Chess3D.App.Wpf.Views;
 

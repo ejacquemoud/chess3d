@@ -1,6 +1,3 @@
-using System; 
-using Chess3D.Core.Enums;
-
 namespace Chess3D.Core.Models
 {
     public readonly record struct Square(int File, int Rank)

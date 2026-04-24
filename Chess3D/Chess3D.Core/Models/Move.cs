@@ -1,4 +1,3 @@
-using System; 
 using Chess3D.Core.Enums;
 
 namespace Chess3D.Core.Models

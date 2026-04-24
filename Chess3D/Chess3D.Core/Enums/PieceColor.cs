@@ -1,5 +1,3 @@
-using System; 
-
 namespace Chess3D.Core.Enums
 {
     public enum PieceColor

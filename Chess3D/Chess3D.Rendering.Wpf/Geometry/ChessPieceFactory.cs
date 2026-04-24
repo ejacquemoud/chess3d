@@ -20,9 +20,10 @@ public static class ChessPieceFactory
 
         return type switch
         {
-            PieceType.Pawn => CreatePawn(c, pieceColor),
-            //PieceType.Pawn => CreatePawnFromObj(c, pieceColor),
-            PieceType.Rook => CreateRook(c, pieceColor),
+            //PieceType.Pawn => CreatePawn(c, pieceColor),
+            PieceType.Pawn => CreatePawnFromObj(c, pieceColor),
+            //PieceType.Rook => CreateRook(c, pieceColor),
+            PieceType.Rook => CreateRookFromObj(c, pieceColor),
             PieceType.Knight => CreateKnight(c, pieceColor),
             PieceType.Bishop => CreateBishop(c, pieceColor),
             PieceType.Queen => CreateQueen(c, pieceColor),
@@ -636,11 +637,17 @@ public static class ChessPieceFactory
         return group;
     }
 
-    private static List<GeometryModel3D> CreatePawnFromObj(Point3D baseCenter, PieceColor color)
+    private static List<GeometryModel3D> CreatePieceFromObj(
+    string objFileName,
+    Point3D baseCenter,
+    PieceColor color,
+    double scale,
+    double offsetX,
+    double rotateY)
     {
         var fullPath = Path.Combine(
             AppContext.BaseDirectory,
-            "Assets", "Models", "Chess", "Pawn.obj");
+            "Assets", "Models", "Chess", objFileName);
 
         var importer = new ModelImporter
         {
@@ -654,31 +661,33 @@ public static class ChessPieceFactory
         {
             if (model is GeometryModel3D gm)
             {
+                var material = CreatePieceMaterial(color);
+
                 var clone = new GeometryModel3D
                 {
                     Geometry = gm.Geometry,
-                    Material = CreatePieceMaterial(color),
-                    BackMaterial = CreatePieceMaterial(color)
+                    Material = material,
+                    BackMaterial = material
                 };
 
                 var baseTransform = new Transform3DGroup();
-                baseTransform.Children.Add(new ScaleTransform3D(0.42, 0.42, 0.42));
+                baseTransform.Children.Add(new ScaleTransform3D(scale, scale, scale));
                 baseTransform.Children.Add(new RotateTransform3D(
                     new AxisAngleRotation3D(new Vector3D(1, 0, 0), 0)));
                 baseTransform.Children.Add(new RotateTransform3D(
-                    new AxisAngleRotation3D(new Vector3D(0, 1, 0), 180)));
+                    new AxisAngleRotation3D(new Vector3D(0, 1, 0), rotateY)));
                 baseTransform.Children.Add(new TranslateTransform3D(
-                    baseCenter.X - 1.86,
+                    baseCenter.X + offsetX,
                     baseCenter.Y,
                     baseCenter.Z));
 
                 var animationTranslate = new TranslateTransform3D(0, 0, 0);
 
-                var tg = new Transform3DGroup();
-                tg.Children.Add(baseTransform);
-                tg.Children.Add(animationTranslate);
+                var transformGroup = new Transform3DGroup();
+                transformGroup.Children.Add(baseTransform);
+                transformGroup.Children.Add(animationTranslate);
 
-                clone.Transform = tg;
+                clone.Transform = transformGroup;
                 result.Add(clone);
                 return;
             }
@@ -692,5 +701,71 @@ public static class ChessPieceFactory
 
         Collect(loaded);
         return result;
+    }
+
+    private static List<GeometryModel3D> CreatePawnFromObj(Point3D baseCenter, PieceColor color)
+    {
+        return CreatePieceFromObj(
+            "Pawn.obj",
+            baseCenter,
+            color,
+            scale: 0.42,
+            offsetX: -1.86,
+            rotateY: 180);
+    }
+
+    private static List<GeometryModel3D> CreateRookFromObj(Point3D baseCenter, PieceColor color)
+    {
+        return CreatePieceFromObj(
+            "Rook.obj",
+            baseCenter,
+            color,
+            scale: 0.42,
+            offsetX: -1.15,
+            rotateY: 180);
+    }
+
+    private static List<GeometryModel3D> CreateKnightFromObj(Point3D baseCenter, PieceColor color)
+    {
+        return CreatePieceFromObj(
+            "Knight.obj",
+            baseCenter,
+            color,
+            scale: 0.42,
+            offsetX: -1.86,
+            rotateY: 180);
+    }
+
+    private static List<GeometryModel3D> CreateBishopFromObj(Point3D baseCenter, PieceColor color)
+    {
+        return CreatePieceFromObj(
+            "Bishop.obj",
+            baseCenter,
+            color,
+            scale: 0.42,
+            offsetX: -1.86,
+            rotateY: 180);
+    }
+
+    private static List<GeometryModel3D> CreateQueenFromObj(Point3D baseCenter, PieceColor color)
+    {
+        return CreatePieceFromObj(
+            "Queen.obj",
+            baseCenter,
+            color,
+            scale: 0.42,
+            offsetX: -1.86,
+            rotateY: 180);
+    }
+
+    private static List<GeometryModel3D> CreateKingFromObj(Point3D baseCenter, PieceColor color)
+    {
+        return CreatePieceFromObj(
+            "King.obj",
+            baseCenter,
+            color,
+            scale: 0.42,
+            offsetX: -1.86,
+            rotateY: 180);
     }
 }

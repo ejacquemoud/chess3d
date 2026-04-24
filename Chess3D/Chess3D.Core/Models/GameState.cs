@@ -1,4 +1,3 @@
-using System.Collections.Generic; 
 using Chess3D.Core.Enums;
 
 namespace Chess3D.Core.Models
