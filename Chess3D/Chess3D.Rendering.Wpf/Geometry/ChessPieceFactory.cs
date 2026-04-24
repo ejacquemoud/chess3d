@@ -1,55 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Chess3D.Rendering.Wpf.Enums;
+using HelixToolkit.Wpf;
+using System.IO;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using Chess3D.Rendering.Wpf.Enums;
 
 namespace Chess3D.Rendering.Wpf.Geometry;
 
 public static class ChessPieceFactory
 {
     private const double PieceLift = 0.01;
-    private const int DefaultSlices = 44;
-    private const int SphereSlices = 24;
-    private const int SphereStacks = 16;
+    private const int DefaultSlices = 56;
+    private const int SphereSlices = 28;
+    private const int SphereStacks = 18;
 
     public static List<GeometryModel3D> CreatePieceModels(PieceType type, PieceColor pieceColor, Point3D baseCenter)
     {
-        var color = pieceColor == PieceColor.White
-            ? Color.FromRgb(238, 232, 220)
-            : Color.FromRgb(58, 44, 34);
-
         var c = new Point3D(baseCenter.X, baseCenter.Y + PieceLift, baseCenter.Z);
 
         return type switch
         {
-            PieceType.Pawn => CreatePawn(c, color),
-            PieceType.Rook => CreateRook(c, color),
-            PieceType.Knight => CreateKnight(c, color),
-            PieceType.Bishop => CreateBishop(c, color),
-            PieceType.Queen => CreateQueen(c, color),
-            PieceType.King => CreateKing(c, color),
+            PieceType.Pawn => CreatePawn(c, pieceColor),
+            //PieceType.Pawn => CreatePawnFromObj(c, pieceColor),
+            PieceType.Rook => CreateRook(c, pieceColor),
+            PieceType.Knight => CreateKnight(c, pieceColor),
+            PieceType.Bishop => CreateBishop(c, pieceColor),
+            PieceType.Queen => CreateQueen(c, pieceColor),
+            PieceType.King => CreateKing(c, pieceColor),
             _ => new List<GeometryModel3D>()
         };
     }
 
-    private static List<GeometryModel3D> CreatePawn(Point3D c, Color color)
+    private static List<GeometryModel3D> CreatePawn(Point3D c, PieceColor color)
     {
         var body = new (double Radius, double Y)[]
         {
-            (0.00, 0.00),
-            (0.33, 0.02),
-            (0.31, 0.05),
-            (0.26, 0.09),
-            (0.21, 0.13),
-            (0.18, 0.18),
-            (0.15, 0.25),
-            (0.12, 0.36),
-            (0.11, 0.46),
-            (0.14, 0.54),
-            (0.09, 0.60),
-            (0.07, 0.63),
-            (0.00, 0.64)
+            (0.000, 0.000),
+            (0.355, 0.018),
+            (0.340, 0.050),
+            (0.285, 0.095),
+            (0.225, 0.145),
+            (0.185, 0.215),
+            (0.155, 0.310),
+            (0.125, 0.430),
+            (0.115, 0.525),
+            (0.138, 0.585),
+            (0.106, 0.635),
+            (0.082, 0.662),
+            (0.000, 0.676)
         };
 
         return new()
@@ -57,40 +55,49 @@ public static class ChessPieceFactory
             CreateLathedSolid(body, c, color, DefaultSlices),
             CreateLathedSolid(new (double Radius, double Y)[]
             {
-                (0.00, 0.00),
-                (0.095, 0.01),
-                (0.085, 0.03),
-                (0.00, 0.05)
-            }, new Point3D(c.X, c.Y + 0.61, c.Z), color, DefaultSlices),
-            CreateSphere(new Point3D(c.X, c.Y + 0.73, c.Z), 0.105, color, SphereSlices, SphereStacks)
+                (0.000, 0.000),
+                (0.100, 0.010),
+                (0.093, 0.028),
+                (0.078, 0.050),
+                (0.000, 0.060)
+            }, new Point3D(c.X, c.Y + 0.640, c.Z), color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 0.760, c.Z), 0.108, color, SphereSlices, SphereStacks)
         };
     }
 
-    private static List<GeometryModel3D> CreateRook(Point3D c, Color color)
+    private static List<GeometryModel3D> CreateRook(Point3D c, PieceColor color)
     {
         var body = new (double Radius, double Y)[]
         {
-            (0.00, 0.00),
-            (0.34, 0.02),
-            (0.32, 0.06),
-            (0.26, 0.10),
-            (0.22, 0.16),
-            (0.20, 0.28),
-            (0.19, 0.44),
-            (0.19, 0.58),
-            (0.22, 0.66),
-            (0.27, 0.72),
-            (0.25, 0.77),
-            (0.00, 0.78)
+            (0.000, 0.000),
+            (0.365, 0.020),
+            (0.345, 0.055),
+            (0.290, 0.100),
+            (0.240, 0.165),
+            (0.214, 0.280),
+            (0.205, 0.455),
+            (0.208, 0.610),
+            (0.238, 0.690),
+            (0.285, 0.748),
+            (0.270, 0.790),
+            (0.000, 0.805)
         };
 
         var models = new List<GeometryModel3D>
         {
-            CreateLathedSolid(body, c, color, DefaultSlices)
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateLathedSolid(new (double Radius, double Y)[]
+            {
+                (0.000, 0.000),
+                (0.255, 0.010),
+                (0.272, 0.028),
+                (0.258, 0.050),
+                (0.000, 0.062)
+            }, new Point3D(c.X, c.Y + 0.752, c.Z), color, DefaultSlices)
         };
 
         int crenelCount = 6;
-        double crenelRadius = 0.245;
+        double crenelRadius = 0.248;
 
         for (int i = 0; i < crenelCount; i++)
         {
@@ -99,150 +106,288 @@ public static class ChessPieceFactory
             double z = c.Z + crenelRadius * Math.Sin(angle);
 
             models.Add(CreateBox(
-                new Point3D(x, c.Y + 0.82, z),
-                0.072,
-                0.09,
-                0.08,
+                new Point3D(x, c.Y + 0.844, z),
+                0.080,
+                0.095,
+                0.086,
                 color));
         }
 
-        models.Add(CreateLathedSolid(new (double Radius, double Y)[]
+        return models;
+    }
+
+    private static List<GeometryModel3D> CreateBishop(Point3D c, PieceColor color)
+    {
+        var body = new (double Radius, double Y)[]
         {
-            (0.00, 0.00),
-            (0.24, 0.01),
-            (0.255, 0.03),
-            (0.24, 0.05),
-            (0.00, 0.06)
-        }, new Point3D(c.X, c.Y + 0.74, c.Z), color, DefaultSlices));
+            (0.000, 0.000),
+            (0.345, 0.020),
+            (0.315, 0.060),
+            (0.238, 0.105),
+            (0.190, 0.195),
+            (0.145, 0.360),
+            (0.128, 0.560),
+            (0.154, 0.690),
+            (0.205, 0.785),
+            (0.165, 0.845),
+            (0.118, 0.905),
+            (0.000, 0.940)
+        };
+
+        var models = new List<GeometryModel3D>
+        {
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 0.955, c.Z), 0.070, color, SphereSlices, SphereStacks)
+        };
+
+        models.Add(CreateBishopMiterCut(new Point3D(c.X, c.Y + 0.805, c.Z), color));
 
         return models;
     }
 
-    private static List<GeometryModel3D> CreateKnight(Point3D c, Color color)
+    private static List<GeometryModel3D> CreateQueen(Point3D c, PieceColor color)
     {
+        var body = new (double Radius, double Y)[]
+        {
+            (0.000, 0.000),
+            (0.360, 0.020),
+            (0.330, 0.060),
+            (0.250, 0.105),
+            (0.198, 0.195),
+            (0.155, 0.360),
+            (0.138, 0.585),
+            (0.165, 0.730),
+            (0.220, 0.825),
+            (0.182, 0.885),
+            (0.125, 0.940),
+            (0.000, 0.960)
+        };
+
+        var models = new List<GeometryModel3D>
+        {
+            CreateLathedSolid(body, c, color, DefaultSlices),
+            CreateLathedSolid(new (double Radius, double Y)[]
+            {
+                (0.000, 0.000),
+                (0.155, 0.010),
+                (0.175, 0.026),
+                (0.160, 0.048),
+                (0.000, 0.060)
+            }, new Point3D(c.X, c.Y + 0.905, c.Z), color, DefaultSlices),
+            CreateSphere(new Point3D(c.X, c.Y + 1.045, c.Z), 0.060, color, SphereSlices, SphereStacks)
+        };
+
+        AddCrownBeads(models, c, 0.975, 0.150, 8, 0.030, color);
+
+        return models;
+    }
+
+    private static List<GeometryModel3D> CreateKing(Point3D c, PieceColor color)
+    {
+        var body = new (double Radius, double Y)[]
+        {
+        (0.000, 0.000),
+        (0.365, 0.020),
+        (0.332, 0.060),
+        (0.252, 0.108),
+        (0.200, 0.200),
+        (0.158, 0.390),
+        (0.138, 0.640),
+        (0.155, 0.760),
+        (0.178, 0.840),
+        (0.150, 0.900),
+        (0.108, 0.955),
+        (0.000, 0.980)
+        };
+
         var models = new List<GeometryModel3D>
     {
-        CreateLathedSolid(new (double Radius, double Y)[]
-        {
-            (0.00, 0.00),
-            (0.34, 0.02),
-            (0.32, 0.06),
-            (0.26, 0.10),
-            (0.22, 0.16),
-            (0.19, 0.24),
-            (0.17, 0.32),
-            (0.16, 0.40),
-            (0.00, 0.42)
-        }, c, color, DefaultSlices),
+        CreateLathedSolid(body, c, color, DefaultSlices),
 
         CreateLathedSolid(new (double Radius, double Y)[]
         {
-            (0.00, 0.00),
-            (0.18, 0.02),
-            (0.19, 0.08),
-            (0.17, 0.12),
-            (0.12, 0.16),
-            (0.00, 0.18)
-        }, new Point3D(c.X + 0.02, c.Y + 0.39, c.Z), color, DefaultSlices)
+            (0.000, 0.000),
+            (0.090, 0.010),
+            (0.100, 0.028),
+            (0.088, 0.050),
+            (0.060, 0.090),
+            (0.048, 0.145),
+            (0.000, 0.160)
+        }, new Point3D(c.X, c.Y + 0.955, c.Z), color, DefaultSlices),
+
+        CreateBox(
+            new Point3D(c.X, c.Y + 1.120, c.Z),
+            0.036,
+            0.175,
+            0.036,
+            color),
+
+        CreateBox(
+            new Point3D(c.X, c.Y + 1.160, c.Z),
+            0.145,
+            0.024,
+            0.036,
+            color)
     };
 
-        models.Add(CreateBox(new Point3D(c.X - 0.005, c.Y + 0.50, c.Z), 0.16, 0.24, 0.20, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.030, c.Y + 0.63, c.Z), 0.15, 0.18, 0.18, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.070, c.Y + 0.75, c.Z), 0.13, 0.16, 0.15, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.095, c.Y + 0.86, c.Z), 0.11, 0.14, 0.11, color));
-
-        models.Add(CreateBox(new Point3D(c.X - 0.055, c.Y + 0.58, c.Z), 0.07, 0.28, 0.14, color));
-        models.Add(CreateBox(new Point3D(c.X - 0.010, c.Y + 0.72, c.Z), 0.06, 0.16, 0.10, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.028, c.Y + 0.82, c.Z), 0.05, 0.12, 0.08, color));
-
-        models.Add(CreateBox(new Point3D(c.X + 0.090, c.Y + 0.96, c.Z), 0.035, 0.10, 0.045, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.128, c.Y + 0.97, c.Z), 0.030, 0.08, 0.040, color));
-
-        models.Add(CreateBox(new Point3D(c.X + 0.082, c.Y + 0.74, c.Z + 0.065), 0.018, 0.018, 0.018, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.082, c.Y + 0.74, c.Z - 0.065), 0.018, 0.018, 0.018, color));
-
-        models.Add(CreateBox(new Point3D(c.X + 0.115, c.Y + 0.58, c.Z), 0.045, 0.08, 0.09, color));
-        models.Add(CreateBox(new Point3D(c.X + 0.145, c.Y + 0.67, c.Z), 0.028, 0.05, 0.07, color));
-
         return models;
     }
 
-    private static List<GeometryModel3D> CreateBishop(Point3D c, Color color)
+    private static List<GeometryModel3D> CreateKnight(Point3D c, PieceColor color)
     {
-        var body = new (double Radius, double Y)[]
-        {
-            (0.00, 0.00),
-            (0.32, 0.02),
-            (0.29, 0.06),
-            (0.22, 0.10),
-            (0.18, 0.18),
-            (0.14, 0.33),
-            (0.12, 0.52),
-            (0.15, 0.64),
-            (0.19, 0.73),
-            (0.12, 0.82),
-            (0.00, 0.84)
-        };
-
-        return new()
-        {
-            CreateLathedSolid(body, c, color, DefaultSlices),
-            CreateSphere(new Point3D(c.X, c.Y + 0.86, c.Z), 0.085, color, SphereSlices, SphereStacks),
-            CreateBox(new Point3D(c.X + 0.01, c.Y + 0.76, c.Z), 0.03, 0.20, 0.20, color)
-        };
-    }
-
-    private static List<GeometryModel3D> CreateQueen(Point3D c, Color color)
-    {
-        var body = new (double Radius, double Y)[]
-        {
-            (0.00, 0.00),
-            (0.34, 0.02),
-            (0.31, 0.06),
-            (0.24, 0.10),
-            (0.19, 0.19),
-            (0.15, 0.34),
-            (0.13, 0.55),
-            (0.16, 0.69),
-            (0.21, 0.77),
-            (0.17, 0.83),
-            (0.00, 0.84)
-        };
-
         var models = new List<GeometryModel3D>
         {
-            CreateLathedSolid(body, c, color, DefaultSlices),
-            CreateSphere(new Point3D(c.X, c.Y + 0.95, c.Z), 0.078, color, SphereSlices, SphereStacks)
+            CreateLathedSolid(new (double Radius, double Y)[]
+            {
+                (0.000, 0.000),
+                (0.360, 0.020),
+                (0.335, 0.058),
+                (0.275, 0.102),
+                (0.228, 0.168),
+                (0.194, 0.262),
+                (0.176, 0.348),
+                (0.165, 0.430),
+                (0.000, 0.445)
+            }, c, color, DefaultSlices),
+
+            CreateLathedSolid(new (double Radius, double Y)[]
+            {
+                (0.000, 0.000),
+                (0.185, 0.015),
+                (0.196, 0.070),
+                (0.180, 0.128),
+                (0.142, 0.175),
+                (0.000, 0.192)
+            }, new Point3D(c.X, c.Y + 0.410, c.Z), color, DefaultSlices)
         };
 
-        AddCrownBeads(models, c, 0.86, 0.135, 6, 0.038, color);
+        models.Add(CreateKnightNeck(
+            new Point3D(c.X - 0.015, c.Y + 0.570, c.Z),
+            0.22,
+            0.34,
+            0.16,
+            color));
+
+        models.Add(CreateKnightHead(
+            new Point3D(c.X + 0.025, c.Y + 0.790, c.Z),
+            color));
+
+        models.Add(CreateKnightEar(
+            new Point3D(c.X + 0.050, c.Y + 0.970, c.Z + 0.050),
+            color,
+            0.040,
+            0.095,
+            0.028));
+
+        models.Add(CreateKnightEar(
+            new Point3D(c.X + 0.050, c.Y + 0.970, c.Z - 0.050),
+            color,
+            0.040,
+            0.095,
+            0.028));
+
+        models.Add(CreateKnightSnout(
+            new Point3D(c.X + 0.152, c.Y + 0.785, c.Z),
+            color));
+
+        models.Add(CreateKnightMane(
+            new Point3D(c.X - 0.060, c.Y + 0.790, c.Z),
+            color));
 
         return models;
     }
 
-    private static List<GeometryModel3D> CreateKing(Point3D c, Color color)
+    private static GeometryModel3D CreateKnightNeck(Point3D center, double width, double height, double depth, PieceColor color)
     {
-        var body = new (double Radius, double Y)[]
+        var points = new List<Point>
         {
-            (0.00, 0.00),
-            (0.34, 0.02),
-            (0.31, 0.06),
-            (0.24, 0.10),
-            (0.19, 0.19),
-            (0.15, 0.36),
-            (0.13, 0.60),
-            (0.16, 0.74),
-            (0.21, 0.82),
-            (0.16, 0.88),
-            (0.00, 0.89)
+            new(-0.45, -0.50),
+            new(-0.25, -0.20),
+            new(-0.06,  0.18),
+            new( 0.08,  0.46),
+            new( 0.20,  0.62),
+            new( 0.10,  0.68),
+            new(-0.12,  0.48),
+            new(-0.28,  0.12),
+            new(-0.40, -0.22)
         };
 
-        return new()
+        return CreateExtrudedProfile(points, center, width, height, depth, color);
+    }
+
+    private static GeometryModel3D CreateKnightHead(Point3D center, PieceColor color)
+    {
+        var points = new List<Point>
         {
-            CreateLathedSolid(body, c, color, DefaultSlices),
-            CreateBox(new Point3D(c.X, c.Y + 0.99, c.Z), 0.06, 0.20, 0.06, color),
-            CreateBox(new Point3D(c.X, c.Y + 1.07, c.Z), 0.20, 0.04, 0.04, color)
+            new(-0.55, -0.42),
+            new(-0.30, -0.30),
+            new(-0.05, -0.08),
+            new( 0.22,  0.18),
+            new( 0.42,  0.44),
+            new( 0.32,  0.62),
+            new( 0.10,  0.78),
+            new(-0.10,  0.72),
+            new(-0.24,  0.48),
+            new(-0.30,  0.15),
+            new(-0.48, -0.06)
         };
+
+        return CreateExtrudedProfile(points, center, 0.34, 0.42, 0.18, color);
+    }
+
+    private static GeometryModel3D CreateKnightEar(Point3D center, PieceColor color, double width, double height, double depth)
+    {
+        var points = new List<Point>
+        {
+            new(-0.40, -0.50),
+            new( 0.00,  0.55),
+            new( 0.40, -0.50)
+        };
+
+        return CreateExtrudedProfile(points, center, width, height, depth, color);
+    }
+
+    private static GeometryModel3D CreateKnightSnout(Point3D center, PieceColor color)
+    {
+        var points = new List<Point>
+        {
+            new(-0.48, -0.22),
+            new( 0.20, -0.18),
+            new( 0.42,  0.02),
+            new( 0.20,  0.18),
+            new(-0.46,  0.22)
+        };
+
+        return CreateExtrudedProfile(points, center, 0.14, 0.12, 0.16, color);
+    }
+
+    private static GeometryModel3D CreateKnightMane(Point3D center, PieceColor color)
+    {
+        var points = new List<Point>
+        {
+            new(-0.35, -0.50),
+            new(-0.05, -0.42),
+            new( 0.10, -0.12),
+            new( 0.18,  0.20),
+            new( 0.06,  0.48),
+            new(-0.18,  0.55),
+            new(-0.32,  0.20)
+        };
+
+        return CreateExtrudedProfile(points, center, 0.11, 0.35, 0.14, color);
+    }
+
+    private static GeometryModel3D CreateBishopMiterCut(Point3D center, PieceColor color)
+    {
+        var points = new List<Point>
+        {
+            new(-0.18, -0.52),
+            new( 0.18, -0.22),
+            new( 0.12,  0.52),
+            new(-0.12,  0.22)
+        };
+
+        return CreateExtrudedProfile(points, center, 0.13, 0.24, 0.06, color);
     }
 
     private static void AddCrownBeads(
@@ -252,7 +397,7 @@ public static class ChessPieceFactory
         double radius,
         int count,
         double beadRadius,
-        Color color)
+        PieceColor color)
     {
         for (int i = 0; i < count; i++)
         {
@@ -264,7 +409,7 @@ public static class ChessPieceFactory
                 new Point3D(x, c.Y + y, z),
                 beadRadius,
                 color,
-                16,
+                18,
                 12));
         }
     }
@@ -272,7 +417,7 @@ public static class ChessPieceFactory
     private static GeometryModel3D CreateLathedSolid(
         IReadOnlyList<(double Radius, double Y)> profile,
         Point3D origin,
-        Color color,
+        PieceColor color,
         int slices)
     {
         var mesh = new MeshGeometry3D();
@@ -286,7 +431,6 @@ public static class ChessPieceFactory
                 double angle = 2.0 * Math.PI * s / slices;
                 double x = origin.X + radius * Math.Cos(angle);
                 double z = origin.Z + radius * Math.Sin(angle);
-
                 mesh.Positions.Add(new Point3D(x, origin.Y + y, z));
             }
         }
@@ -299,15 +443,15 @@ public static class ChessPieceFactory
             {
                 int a = i * ringSize + s;
                 int b = a + 1;
-                int cc = (i + 1) * ringSize + s;
-                int d = cc + 1;
+                int c = (i + 1) * ringSize + s;
+                int d = c + 1;
 
                 mesh.TriangleIndices.Add(a);
-                mesh.TriangleIndices.Add(cc);
+                mesh.TriangleIndices.Add(c);
                 mesh.TriangleIndices.Add(b);
 
                 mesh.TriangleIndices.Add(b);
-                mesh.TriangleIndices.Add(cc);
+                mesh.TriangleIndices.Add(c);
                 mesh.TriangleIndices.Add(d);
             }
         }
@@ -315,7 +459,73 @@ public static class ChessPieceFactory
         return CreateModel(mesh, color);
     }
 
-    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
+    private static GeometryModel3D CreateExtrudedProfile(
+        IReadOnlyList<Point> profile,
+        Point3D center,
+        double width,
+        double height,
+        double depth,
+        PieceColor color)
+    {
+        var mesh = new MeshGeometry3D();
+        double halfDepth = depth / 2.0;
+
+        for (int i = 0; i < profile.Count; i++)
+        {
+            var p = profile[i];
+            mesh.Positions.Add(new Point3D(
+                center.X + p.X * width,
+                center.Y + p.Y * height,
+                center.Z - halfDepth));
+        }
+
+        for (int i = 0; i < profile.Count; i++)
+        {
+            var p = profile[i];
+            mesh.Positions.Add(new Point3D(
+                center.X + p.X * width,
+                center.Y + p.Y * height,
+                center.Z + halfDepth));
+        }
+
+        int count = profile.Count;
+
+        for (int i = 1; i < count - 1; i++)
+        {
+            mesh.TriangleIndices.Add(0);
+            mesh.TriangleIndices.Add(i);
+            mesh.TriangleIndices.Add(i + 1);
+        }
+
+        for (int i = 1; i < count - 1; i++)
+        {
+            mesh.TriangleIndices.Add(count);
+            mesh.TriangleIndices.Add(count + i + 1);
+            mesh.TriangleIndices.Add(count + i);
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            int next = (i + 1) % count;
+
+            int f0 = i;
+            int f1 = next;
+            int b0 = count + i;
+            int b1 = count + next;
+
+            mesh.TriangleIndices.Add(f0);
+            mesh.TriangleIndices.Add(b0);
+            mesh.TriangleIndices.Add(f1);
+
+            mesh.TriangleIndices.Add(f1);
+            mesh.TriangleIndices.Add(b0);
+            mesh.TriangleIndices.Add(b1);
+        }
+
+        return CreateModel(mesh, color);
+    }
+
+    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, PieceColor color)
     {
         double hx = sizeX / 2.0;
         double hy = sizeY / 2.0;
@@ -347,7 +557,7 @@ public static class ChessPieceFactory
         return CreateModel(mesh, color);
     }
 
-    private static GeometryModel3D CreateSphere(Point3D center, double radius, Color color, int slices, int stacks)
+    private static GeometryModel3D CreateSphere(Point3D center, double radius, PieceColor color, int slices, int stacks)
     {
         var mesh = new MeshGeometry3D();
 
@@ -387,26 +597,100 @@ public static class ChessPieceFactory
         return CreateModel(mesh, color);
     }
 
-    private static GeometryModel3D CreateModel(MeshGeometry3D mesh, Color baseColor)
+    private static GeometryModel3D CreateModel(MeshGeometry3D mesh, PieceColor pieceColor)
     {
-        var materialGroup = new MaterialGroup();
-
-        var diffuse = new DiffuseMaterial(new SolidColorBrush(baseColor));
-        var specular = new SpecularMaterial(
-            new SolidColorBrush(Color.FromArgb(185, 255, 255, 255)),
-            80);
-        var emissive = new EmissiveMaterial(
-            new SolidColorBrush(Color.FromArgb(18, 255, 244, 230)));
-
-        materialGroup.Children.Add(diffuse);
-        materialGroup.Children.Add(specular);
-        materialGroup.Children.Add(emissive);
+        var material = CreatePieceMaterial(pieceColor);
 
         return new GeometryModel3D
         {
             Geometry = mesh,
-            Material = materialGroup,
-            BackMaterial = materialGroup
+            Material = material,
+            BackMaterial = material
         };
+    }
+
+    private static Material CreatePieceMaterial(PieceColor pieceColor)
+    {
+        var group = new MaterialGroup();
+
+        if (pieceColor == PieceColor.White)
+        {
+            group.Children.Add(new DiffuseMaterial(
+                new SolidColorBrush(Color.FromRgb(232, 224, 210))));
+            group.Children.Add(new SpecularMaterial(
+                new SolidColorBrush(Color.FromArgb(170, 255, 248, 238)), 65));
+            group.Children.Add(new EmissiveMaterial(
+                new SolidColorBrush(Color.FromArgb(18, 255, 244, 230))));
+        }
+        else
+        {
+            group.Children.Add(new DiffuseMaterial(
+                new SolidColorBrush(Color.FromRgb(50, 36, 28))));
+            group.Children.Add(new SpecularMaterial(
+                new SolidColorBrush(Color.FromArgb(145, 214, 190, 170)), 48));
+            group.Children.Add(new EmissiveMaterial(
+                new SolidColorBrush(Color.FromArgb(8, 90, 70, 60))));
+        }
+
+        group.Freeze();
+        return group;
+    }
+
+    private static List<GeometryModel3D> CreatePawnFromObj(Point3D baseCenter, PieceColor color)
+    {
+        var fullPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Assets", "Models", "Chess", "Pawn.obj");
+
+        var importer = new ModelImporter
+        {
+            DefaultMaterial = CreatePieceMaterial(color)
+        };
+
+        var loaded = importer.Load(fullPath);
+        var result = new List<GeometryModel3D>();
+
+        void Collect(Model3D model)
+        {
+            if (model is GeometryModel3D gm)
+            {
+                var clone = new GeometryModel3D
+                {
+                    Geometry = gm.Geometry,
+                    Material = CreatePieceMaterial(color),
+                    BackMaterial = CreatePieceMaterial(color)
+                };
+
+                var baseTransform = new Transform3DGroup();
+                baseTransform.Children.Add(new ScaleTransform3D(0.42, 0.42, 0.42));
+                baseTransform.Children.Add(new RotateTransform3D(
+                    new AxisAngleRotation3D(new Vector3D(1, 0, 0), 0)));
+                baseTransform.Children.Add(new RotateTransform3D(
+                    new AxisAngleRotation3D(new Vector3D(0, 1, 0), 180)));
+                baseTransform.Children.Add(new TranslateTransform3D(
+                    baseCenter.X - 1.86,
+                    baseCenter.Y,
+                    baseCenter.Z));
+
+                var animationTranslate = new TranslateTransform3D(0, 0, 0);
+
+                var tg = new Transform3DGroup();
+                tg.Children.Add(baseTransform);
+                tg.Children.Add(animationTranslate);
+
+                clone.Transform = tg;
+                result.Add(clone);
+                return;
+            }
+
+            if (model is Model3DGroup group)
+            {
+                foreach (var child in group.Children)
+                    Collect(child);
+            }
+        }
+
+        Collect(loaded);
+        return result;
     }
 }

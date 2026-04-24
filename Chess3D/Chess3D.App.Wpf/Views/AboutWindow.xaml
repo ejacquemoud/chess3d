@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="À propos"
         Width="520"
-        Height="376"
+        Height="384"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowStyle="ToolWindow"
@@ -100,7 +100,7 @@
                 BorderBrush="{StaticResource CardBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="18"
-                Padding="18,18,18,20">
+                Padding="18">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="18"
                                   ShadowDepth="0"
@@ -182,21 +182,30 @@
 
                 <!-- Footer intégré -->
                 <Border Grid.Row="4"
-                        Background="{StaticResource PanelBrush}"
-                        BorderBrush="{StaticResource PanelBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="12,10">
-                    <DockPanel LastChildFill="False">
-                        <TextBlock Text="© 2026 Etienne Jacquemoud"
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource FooterTextStyle}" />
+                    Margin="0"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    Padding="12,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                        <Button Content="Fermer"
-                                Width="112"
-                                DockPanel.Dock="Right"
-                                Click="CloseButton_Click" />
-                    </DockPanel>
+                        <TextBlock Grid.Column="0"
+                            Text="© 2026 Etienne Jacquemoud"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource FooterTextStyle}" />
+
+                        <Button Grid.Column="2"
+                            Width="112"
+                            HorizontalAlignment="Right"
+                            Click="CloseButton_Click"
+                            Content="Fermer" />
+                    </Grid>
                 </Border>
             </Grid>
         </Border>

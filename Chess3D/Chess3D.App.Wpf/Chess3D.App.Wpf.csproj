@@ -11,6 +11,56 @@
 	<FileVersion>0.9.0.0</FileVersion>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Assets\Models\Chess\Bishop.mtl" />
+    <None Remove="Assets\Models\Chess\Bishop.obj" />
+    <None Remove="Assets\Models\Chess\King.mtl" />
+    <None Remove="Assets\Models\Chess\King.obj" />
+    <None Remove="Assets\Models\Chess\Knight.mtl" />
+    <None Remove="Assets\Models\Chess\Knight.obj" />
+    <None Remove="Assets\Models\Chess\Pawn.mtl" />
+    <None Remove="Assets\Models\Chess\Pawn.obj" />
+    <None Remove="Assets\Models\Chess\Queen.mtl" />
+    <None Remove="Assets\Models\Chess\Queen.obj" />
+    <None Remove="Assets\Models\Chess\Rook.mtl" />
+    <None Remove="Assets\Models\Chess\Rook.obj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\Models\Chess\Bishop.mtl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Bishop.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\King.mtl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\King.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Knight.mtl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Knight.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Pawn.mtl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Pawn.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Queen.mtl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Queen.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Rook.mtl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Models\Chess\Rook.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Chess.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -21,7 +71,6 @@
     <ProjectReference Include="..\Chess3D.Rendering.Wpf\Chess3D.Rendering.Wpf.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Assets\Models\Chess\" />
     <Folder Include="Engines\" />
   </ItemGroup>
   <ItemGroup>

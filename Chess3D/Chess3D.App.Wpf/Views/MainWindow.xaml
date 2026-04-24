@@ -117,7 +117,7 @@
         <Style x:Key="StatusBarButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
             <Setter Property="Background" Value="#121C27" />
-            <Setter Property="BorderBrush" Value="#801E2A37" />
+            <Setter Property="BorderBrush" Value="#243242" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="10,6" />
             <Setter Property="FontSize" Value="12.5" />
@@ -147,11 +147,12 @@
                                 <Setter TargetName="RootBorder" Property="BorderBrush" Value="#AA2E4A63" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="RootBorder" Property="Background" Value="#1A2838" />
-                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="RootBorder" Property="Background" Value="#182534" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#31506A" />
                             </Trigger>
+
                             <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#31506A" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Foreground" Value="{StaticResource TextDisabledBrush}" />
@@ -409,66 +410,72 @@
             </MenuItem>
         </Menu>
 
-        <StatusBar DockPanel.Dock="Bottom">
-            <StatusBarItem>
-                <Border Style="{StaticResource StatusChipBorderStyle}"
-                        Width="180">
-                    <TextBlock x:Name="StatusTextBlock"
+        <StatusBar DockPanel.Dock="Bottom"
+           Padding="8,5,12,5">
+            <StatusBarItem HorizontalContentAlignment="Stretch">
+                <Grid HorizontalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="260" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="280" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0"
+                    Style="{StaticResource StatusChipBorderStyle}">
+                        <TextBlock x:Name="StatusTextBlock"
+                           Style="{StaticResource StatusValueOnlyTextStyle}"
+                           Text="Tour : Blancs" />
+                    </Border>
+
+                    <Border Grid.Column="2"
+                    Style="{StaticResource StatusChipBorderStyle}">
+                        <TextBlock x:Name="SelectionTextBlock"
+                           Style="{StaticResource StatusValueOnlyTextStyle}"
+                           Text="Aucune sélection" />
+                    </Border>
+
+                    <Border Grid.Column="4"
+                    Style="{StaticResource StatusChipBorderStyle}"
+                    HorizontalAlignment="Stretch">
+                        <TextBlock x:Name="ViewModeTextBlock"
+                           Style="{StaticResource StatusValueOnlyTextStyle}"
+                           Text="Mode : 2 joueurs locaux" />
+                    </Border>
+
+                    <Button Grid.Column="6"
+                    Style="{StaticResource StatusBarButtonStyle}"
+                    Click="ResetCamera_Click"
+                    ToolTip="Réinitialiser la caméra">
+                        <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                            <Grid Width="16"
+                          Height="16"
+                          Margin="0,0,8,0">
+                                <Path Data="M 8 1.8 A 6.2 6.2 0 1 0 14.2 8"
+                              Stroke="{StaticResource AccentBrush}"
+                              StrokeThickness="1.7"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Stretch="Fill" />
+                                <Path Data="M 11.5 1.6 L 14.4 1.6 L 14.4 4.5"
+                              Stroke="{StaticResource AccentBrush}"
+                              StrokeThickness="1.7"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round"
+                              Stretch="Fill" />
+                            </Grid>
+
+                            <TextBlock Text="Réinitialiser caméra"
                                Style="{StaticResource StatusValueOnlyTextStyle}"
-                               Text="Tour : Blancs" />
-                </Border>
-            </StatusBarItem>
-
-            <StatusBarItem Margin="8,0,0,0">
-                <Border Style="{StaticResource StatusChipBorderStyle}"
-                        Width="250">
-                    <TextBlock x:Name="SelectionTextBlock"
-                               Style="{StaticResource StatusValueOnlyTextStyle}"
-                               Text="Aucune sélection" />
-                </Border>
-            </StatusBarItem>
-
-            <StatusBarItem Margin="8,0,0,0">
-                <Border Style="{StaticResource StatusChipBorderStyle}"
-                        Width="380">
-                    <TextBlock x:Name="ViewModeTextBlock"
-                               Style="{StaticResource StatusValueOnlyTextStyle}"
-                               Text="Mode : 2 joueurs locaux" />
-                </Border>
-            </StatusBarItem>
-
-            <StatusBarItem DockPanel.Dock="Right"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"
-                           Margin="8,0,0,0">
-                <Button Style="{StaticResource StatusBarButtonStyle}"
-                        Click="ResetCamera_Click"
-                        ToolTip="Réinitialiser la caméra">
-                    <StackPanel Orientation="Horizontal"
-                                VerticalAlignment="Center">
-                        <Grid Width="16"
-                              Height="16"
-                              Margin="0,0,8,0">
-                            <Path Data="M 8 1.8 A 6.2 6.2 0 1 0 14.2 8"
-                                  Stroke="{StaticResource AccentBrush}"
-                                  StrokeThickness="1.7"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  Stretch="Fill" />
-                            <Path Data="M 11.5 1.6 L 14.4 1.6 L 14.4 4.5"
-                                  Stroke="{StaticResource AccentBrush}"
-                                  StrokeThickness="1.7"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                  Stretch="Fill" />
-                        </Grid>
-
-                        <TextBlock Text="Réinitialiser caméra"
-                                   Style="{StaticResource StatusValueOnlyTextStyle}"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                               VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
             </StatusBarItem>
         </StatusBar>
 
