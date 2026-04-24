@@ -377,3 +377,6 @@ InteropTests/NativeTests/out
 *.received.*
 
 Chess3D/Chess3D.App.Wpf/Engines/stockfish.exe
+
+!**/Assets/**/*.obj
+!**/Assets/**/*.mtl
