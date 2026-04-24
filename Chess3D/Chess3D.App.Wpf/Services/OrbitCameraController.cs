@@ -14,6 +14,7 @@ public sealed class OrbitCameraController
 
     private Point _lastMousePosition;
     private bool _isRotating;
+    private bool _isZooming;
 
     private Point3D _target = new(0, 0, 0);
     private double _distance = 13.0;
@@ -28,8 +29,10 @@ public sealed class OrbitCameraController
         _inputElement = inputElement;
         _camera = camera;
 
-        _inputElement.MouseRightButtonDown += OnMouseRightButtonDown;
-        _inputElement.MouseRightButtonUp += OnMouseRightButtonUp;
+        _inputElement.PreviewMouseRightButtonDown += OnMouseRightButtonDown;
+        _inputElement.PreviewMouseRightButtonUp += OnMouseRightButtonUp;
+        _inputElement.PreviewMouseDown += OnPreviewMouseDown;
+        _inputElement.PreviewMouseUp += OnPreviewMouseUp;
         _inputElement.MouseMove += OnMouseMove;
         _inputElement.MouseWheel += OnMouseWheel;
         _inputElement.MouseLeave += OnMouseLeave;
@@ -145,6 +148,31 @@ public sealed class OrbitCameraController
         _fieldOfView = _camera.FieldOfView;
     }
 
+    private void OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        StopActiveAnimation();
+        SyncFromCurrentCamera();
+
+        _isZooming = true;
+        _lastMousePosition = e.GetPosition(_inputElement);
+        _inputElement.CaptureMouse();
+        e.Handled = true;
+    }
+
+    private void OnPreviewMouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Middle)
+            return;
+
+        _isZooming = false;
+        if (!_isRotating)
+            _inputElement.ReleaseMouseCapture();
+        e.Handled = true;
+    }
+
     private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
         StopActiveAnimation();
@@ -153,42 +181,67 @@ public sealed class OrbitCameraController
         _isRotating = true;
         _lastMousePosition = e.GetPosition(_inputElement);
         _inputElement.CaptureMouse();
+        e.Handled = true;
     }
 
     private void OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
         _isRotating = false;
-        _inputElement.ReleaseMouseCapture();
+        if (!_isZooming)
+            _inputElement.ReleaseMouseCapture();
+        e.Handled = true;
     }
 
     private void OnMouseLeave(object sender, MouseEventArgs e)
     {
-        if (!_isRotating)
+        if (!_isRotating && !_isZooming)
             return;
 
         _isRotating = false;
+        _isZooming = false;
         _inputElement.ReleaseMouseCapture();
     }
 
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
-        if (!_isRotating)
-            return;
-
         Point current = e.GetPosition(_inputElement);
         Vector delta = current - _lastMousePosition;
-        _lastMousePosition = current;
 
-        const double rotationSpeed = 0.35;
+        if (_isRotating)
+        {
+            _lastMousePosition = current;
 
-        _yawDegrees = NormalizeAngle(_yawDegrees + delta.X * rotationSpeed);
-        _pitchDegrees = ClampPitch(_pitchDegrees - delta.Y * rotationSpeed);
+            const double rotationSpeed = 0.35;
 
-        ApplyCameraImmediate();
+            _yawDegrees = NormalizeAngle(_yawDegrees + delta.X * rotationSpeed);
+            _pitchDegrees = ClampPitch(_pitchDegrees - delta.Y * rotationSpeed);
+
+            ApplyCameraImmediate();
+            e.Handled = true;
+            return;
+        }
+
+        if (_isZooming)
+        {
+            _lastMousePosition = current;
+
+            const double zoomDragSpeed = 0.03;
+
+            _distance = Clamp(_distance + delta.Y * zoomDragSpeed, 4.0, 30.0);
+
+            ApplyCameraImmediate();
+            e.Handled = true;
+        }
     }
 
     private void OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        if (_isZooming)
+        {
+            e.Handled = true;
+            return;
+        }
+
         StopActiveAnimation();
         SyncFromCurrentCamera();
 
@@ -196,6 +249,7 @@ public sealed class OrbitCameraController
         _distance = Clamp(_distance * zoomFactor, 4.0, 30.0);
 
         ApplyCameraImmediate();
+        e.Handled = true;
     }
 
     private void StopActiveAnimation()

@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Threading;
 
 namespace Chess3D.App.Wpf.Views;
 
@@ -190,13 +191,7 @@ public partial class MainWindow : Window
                 file,
                 rank,
                 promotionWindow.SelectedPromotion.Value,
-                () =>
-                {
-                    Dispatcher.Invoke(async () =>
-                    {
-                        await AfterAnimatedMoveAsync($"Promotion vers {targetSquare}");
-                    });
-                });
+                () => _ = AfterAnimatedMoveAsync($"Promotion vers {targetSquare}"));
 
             if (!movePlayed)
                 RefreshStatusBar($"Coup invalide vers {targetSquare}");
@@ -207,13 +202,7 @@ public partial class MainWindow : Window
         bool normalMovePlayed = _boardViewModel.TryAnimateMoveSelectedPieceTo(
             file,
             rank,
-            () =>
-            {
-                Dispatcher.Invoke(async () =>
-                {
-                    await AfterAnimatedMoveAsync($"Déplacement vers {targetSquare}");
-                });
-            });
+            () => _ = AfterAnimatedMoveAsync($"Déplacement vers {targetSquare}"));
 
         if (!normalMovePlayed)
             RefreshStatusBar($"Coup invalide vers {targetSquare}");
@@ -236,13 +225,35 @@ public partial class MainWindow : Window
     private async Task AfterAnimatedMoveAsync(string statusMessage)
     {
         UpdateSelectionText("Aucune sélection");
-        UpdateCameraAfterMove();
 
         if (ShowGameStateIfNeeded())
             return;
 
         RefreshStatusBar(statusMessage);
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isGameOver)
+                UpdateCameraAfterMove();
+        }, DispatcherPriority.Background);
+
         await TryPlayCpuMoveAsync();
+    }
+
+    private void FinalizeCpuMoveUi(string uci)
+    {
+        UpdateSelectionText("Aucune sélection");
+
+        if (ShowGameStateIfNeeded())
+            return;
+
+        RefreshStatusBar($"CPU joue {uci}");
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (!_isGameOver)
+                UpdateCameraAfterMove();
+        }, DispatcherPriority.Background);
     }
 
     private bool ShowGameStateIfNeeded()
@@ -312,12 +323,16 @@ public partial class MainWindow : Window
                 _boardState.MakeMove(cpuMove);
                 _boardViewModel.RefreshPiecesFromBoardState();
                 UpdateSelectionText("Aucune sélection");
-                UpdateCameraAfterMove();
-
-                if (ShowGameStateIfNeeded())
-                    return;
-
                 RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (ShowGameStateIfNeeded())
+                        return;
+
+                    UpdateCameraAfterMove();
+                }, DispatcherPriority.Background);
+
                 return;
             }
 
@@ -329,38 +344,14 @@ public partial class MainWindow : Window
                     cpuMove.To.File,
                     cpuMove.To.Rank,
                     cpuMove.Promotion,
-                    () =>
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            UpdateSelectionText("Aucune sélection");
-                            UpdateCameraAfterMove();
-
-                            if (ShowGameStateIfNeeded())
-                                return;
-
-                            RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
-                        });
-                    });
+                    () => FinalizeCpuMoveUi(cpuMove.ToUci()));
             }
             else
             {
                 movePlayed = _boardViewModel.TryAnimateMoveSelectedPieceTo(
                     cpuMove.To.File,
                     cpuMove.To.Rank,
-                    () =>
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            UpdateSelectionText("Aucune sélection");
-                            UpdateCameraAfterMove();
-
-                            if (ShowGameStateIfNeeded())
-                                return;
-
-                            RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
-                        });
-                    });
+                    () => FinalizeCpuMoveUi(cpuMove.ToUci()));
             }
 
             if (!movePlayed)
@@ -368,12 +359,15 @@ public partial class MainWindow : Window
                 _boardState.MakeMove(cpuMove);
                 _boardViewModel.RefreshPiecesFromBoardState();
                 UpdateSelectionText("Aucune sélection");
-                UpdateCameraAfterMove();
-
-                if (ShowGameStateIfNeeded())
-                    return;
-
                 RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (ShowGameStateIfNeeded())
+                        return;
+
+                    UpdateCameraAfterMove();
+                }, DispatcherPriority.Background);
             }
         }
         catch (OperationCanceledException)
@@ -411,16 +405,9 @@ public partial class MainWindow : Window
         _isGameOver = false;
 
         _boardState = BoardState.CreateInitial();
-        _boardViewModel = new Board3DViewModel(_boardState);
-
-        Viewport.Children.Clear();
-        Viewport.Children.Add(new ModelVisual3D
-        {
-            Content = _boardViewModel.Scene
-        });
+        _boardViewModel.ResetBoard(_boardState);
 
         ResetCameraForCurrentMode();
-        _boardViewModel.ClearHighlights();
         UpdateSelectionText("Aucune sélection");
 
         if (_stockfishClient is not null)

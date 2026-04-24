@@ -17,7 +17,7 @@ public sealed class Board3DViewModel
 {
     public Model3DGroup Scene { get; }
 
-    private readonly BoardState _boardState;
+    private BoardState _boardState;
     private readonly Dictionary<Model3D, PieceVisual> _modelToPiece = new();
     private readonly List<GeometryModel3D> _moveHighlights = new();
     private readonly List<PieceVisual> _pieces = new();
@@ -88,6 +88,7 @@ public sealed class Board3DViewModel
         }
 
         ClearHighlights();
+        _isAnimatingMove = false;
     }
 
     private void ClearPieceVisuals()
@@ -119,10 +120,6 @@ public sealed class Board3DViewModel
         foreach (var model in models)
         {
             piece.Models.Add(model);
-
-            var translate = EnsureTranslateTransform(model);
-            piece.TranslateTransforms.Add(translate);
-
             _modelToPiece[model] = piece;
             Scene.Children.Add(model);
         }
@@ -248,6 +245,117 @@ public sealed class Board3DViewModel
         return new Point3D(x, y, z);
     }
 
+    private PieceVisual? GetPieceVisualAt(int file, int rank, PieceVisual? except = null)
+    {
+        return _pieces.FirstOrDefault(p =>
+            p != except &&
+            p.File == file &&
+            p.Rank == rank);
+    }
+
+    private PieceVisual? GetCapturedPieceVisualForMove(PieceVisual movingPiece, Square from, Square to)
+    {
+        var directCapture = GetPieceVisualAt(to.File, to.Rank, movingPiece);
+        if (directCapture != null)
+            return directCapture;
+
+        var movingBoardPiece = _boardState.GetPiece(from);
+        if (movingBoardPiece == null || movingBoardPiece.Type != CorePieceType.Pawn)
+            return null;
+
+        if (!_boardState.EnPassantTargetSquare.HasValue || _boardState.EnPassantTargetSquare.Value != to)
+            return null;
+
+        if (from.File == to.File)
+            return null;
+
+        return GetPieceVisualAt(to.File, from.Rank, movingPiece);
+    }
+
+    private PieceVisual? GetRookVisualForCastlingBeforeMove(PieceVisual movingPiece, Square from, Square to)
+    {
+        var movingBoardPiece = _boardState.GetPiece(from);
+        if (movingBoardPiece == null || movingBoardPiece.Type != CorePieceType.King)
+            return null;
+
+        if (Math.Abs(to.File - from.File) != 2)
+            return null;
+
+        int rookFromFile = to.File > from.File ? 7 : 0;
+        return GetPieceVisualAt(rookFromFile, from.Rank, movingPiece);
+    }
+
+    private void RemovePieceVisual(PieceVisual piece)
+    {
+        foreach (var model in piece.Models)
+        {
+            Scene.Children.Remove(model);
+            _modelToPiece.Remove(model);
+        }
+
+        _pieces.Remove(piece);
+
+        if (ReferenceEquals(SelectedPiece, piece))
+            SelectedPiece = null;
+    }
+
+    private void ReplacePieceVisual(PieceVisual oldPiece, WpfPieceType newType, WpfPieceColor newColor, int file, int rank)
+    {
+        RemovePieceVisual(oldPiece);
+        AddPieceVisual(newType, newColor, file, rank);
+    }
+
+    private void ResetPieceTransforms(PieceVisual piece)
+    {
+        foreach (var model in piece.Models)
+        {
+            var translate = EnsureTranslateTransform(model);
+            translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, null);
+            translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, null);
+            translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
+            translate.OffsetX = 0;
+            translate.OffsetY = 0;
+            translate.OffsetZ = 0;
+        }
+    }
+
+    private void RebasePieceToSquare(PieceVisual piece, int newFile, int newRank)
+    {
+        ResetPieceTransforms(piece);
+
+        foreach (var model in piece.Models)
+        {
+            if (model is not GeometryModel3D geometryModel)
+                continue;
+
+            Point3D newCenter = GetSquareCenter(newFile, newRank);
+            var material = geometryModel.Material;
+            var backMaterial = geometryModel.BackMaterial;
+
+            Scene.Children.Remove(geometryModel);
+            _modelToPiece.Remove(geometryModel);
+
+            var recreatedModels = ChessPieceFactory.CreatePieceModels(piece.PieceType, piece.PieceColor, newCenter);
+            foreach (var recreated in recreatedModels)
+            {
+                piece.Models.Add(recreated);
+                _modelToPiece[recreated] = piece;
+                Scene.Children.Add(recreated);
+            }
+
+            break;
+        }
+
+        foreach (var oldModel in piece.Models.ToList())
+        {
+            if (!_modelToPiece.ContainsKey(oldModel))
+                piece.Models.Remove(oldModel);
+        }
+
+        piece.File = newFile;
+        piece.Rank = newRank;
+    }
+
     private TranslateTransform3D EnsureTranslateTransform(Model3D model)
     {
         if (model.Transform is TranslateTransform3D translate)
@@ -281,13 +389,86 @@ public sealed class Board3DViewModel
         return translateTransform;
     }
 
+    private static SolidColorBrush CreateAnimatedBrushFromMaterial(Material? material, Color fallbackColor)
+    {
+        if (material is DiffuseMaterial dm && dm.Brush is SolidColorBrush existing)
+        {
+            var brush = existing.IsFrozen ? existing.Clone() : existing.Clone();
+            brush.Opacity = 1.0;
+            return brush;
+        }
+
+        return new SolidColorBrush(fallbackColor);
+    }
+
+    private void FadeOutPiece(PieceVisual piece, int durationMs, Action? completed = null)
+    {
+        if (piece.IsAnimating)
+        {
+            completed?.Invoke();
+            return;
+        }
+
+        piece.IsAnimating = true;
+
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+        var geometryModels = piece.Models.OfType<GeometryModel3D>().ToList();
+
+        if (geometryModels.Count == 0)
+        {
+            RemovePieceVisual(piece);
+            piece.IsAnimating = false;
+            completed?.Invoke();
+            return;
+        }
+
+        int completedCount = 0;
+
+        void HandleCompleted()
+        {
+            completedCount++;
+            if (completedCount < geometryModels.Count)
+                return;
+
+            RemovePieceVisual(piece);
+            piece.IsAnimating = false;
+            completed?.Invoke();
+        }
+
+        Color fallbackColor = piece.PieceColor == WpfPieceColor.White
+            ? Color.FromRgb(245, 245, 245)
+            : Color.FromRgb(35, 35, 35);
+
+        foreach (var model in geometryModels)
+        {
+            var frontBrush = CreateAnimatedBrushFromMaterial(model.Material, fallbackColor);
+            var backBrush = CreateAnimatedBrushFromMaterial(model.BackMaterial, fallbackColor);
+
+            model.Material = new DiffuseMaterial(frontBrush);
+            model.BackMaterial = new DiffuseMaterial(backBrush);
+
+            var fadeFront = new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.0,
+                Duration = duration,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            var fadeBack = fadeFront.Clone();
+            fadeFront.Completed += (_, _) => HandleCompleted();
+
+            frontBrush.BeginAnimation(SolidColorBrush.OpacityProperty, fadeFront);
+            backBrush.BeginAnimation(SolidColorBrush.OpacityProperty, fadeBack);
+        }
+    }
+
     private void AnimatePieceToSquare(PieceVisual piece, int fromFile, int fromRank, int toFile, int toRank, Action? completed)
     {
         if (piece.IsAnimating)
             return;
 
         piece.IsAnimating = true;
-        _isAnimatingMove = true;
 
         var from = GetSquareCenter(fromFile, fromRank);
         var to = GetSquareCenter(toFile, toRank);
@@ -295,7 +476,9 @@ public sealed class Board3DViewModel
         double deltaX = to.X - from.X;
         double deltaZ = to.Z - from.Z;
 
-        foreach (var translate in piece.TranslateTransforms)
+        var translates = piece.Models.Select(EnsureTranslateTransform).ToList();
+
+        foreach (var translate in translates)
         {
             translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, null);
             translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, null);
@@ -307,33 +490,29 @@ public sealed class Board3DViewModel
         }
 
         var duration = TimeSpan.FromMilliseconds(300);
-
         int completedCount = 0;
-        int expectedCount = piece.TranslateTransforms.Count;
 
         void HandleCompleted()
         {
             completedCount++;
-            if (completedCount < expectedCount)
+            if (completedCount < translates.Count)
                 return;
 
-            foreach (var translate in piece.TranslateTransforms)
+            foreach (var translate in translates)
             {
                 translate.BeginAnimation(TranslateTransform3D.OffsetXProperty, null);
                 translate.BeginAnimation(TranslateTransform3D.OffsetYProperty, null);
                 translate.BeginAnimation(TranslateTransform3D.OffsetZProperty, null);
-
-                translate.OffsetX = 0;
+                translate.OffsetX = deltaX;
                 translate.OffsetY = 0;
-                translate.OffsetZ = 0;
+                translate.OffsetZ = deltaZ;
             }
 
             piece.IsAnimating = false;
-            _isAnimatingMove = false;
             completed?.Invoke();
         }
 
-        foreach (var translate in piece.TranslateTransforms)
+        foreach (var translate in translates)
         {
             var animX = new DoubleAnimation
             {
@@ -368,12 +547,43 @@ public sealed class Board3DViewModel
         }
     }
 
+    private void ApplyPostMoveVisualState(PieceVisual movingPiece, Move move)
+    {
+        var from = move.From;
+        var to = move.To;
+
+        if (move.Promotion != CorePieceType.None)
+        {
+            var promotedType = MapPieceType(move.Promotion);
+            var promotedColor = movingPiece.PieceColor;
+            ReplacePieceVisual(movingPiece, promotedType, promotedColor, to.File, to.Rank);
+        }
+        else
+        {
+            RebasePieceToSquare(movingPiece, to.File, to.Rank);
+        }
+
+        var movedBoardPiece = _boardState.GetPiece(to);
+        if (movedBoardPiece != null &&
+            movedBoardPiece.Type == CorePieceType.King &&
+            Math.Abs(to.File - from.File) == 2)
+        {
+            int rookFromFile = to.File > from.File ? 7 : 0;
+            int rookToFile = to.File > from.File ? 5 : 3;
+
+            var rookVisual = GetPieceVisualAt(rookFromFile, from.Rank);
+            if (rookVisual != null)
+                RebasePieceToSquare(rookVisual, rookToFile, from.Rank);
+        }
+    }
+
     public bool TryMoveSelectedPieceTo(int file, int rank)
     {
         if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
+        var to = new Square(file, rank);
         var moves = _boardState.GenerateLegalMovesFor(from);
 
         var matchingMoves = moves.Where(m => m.To.File == file && m.To.Rank == rank).ToList();
@@ -381,8 +591,17 @@ public sealed class Board3DViewModel
             return false;
 
         var selectedMove = matchingMoves.FirstOrDefault(m => m.Promotion == CorePieceType.Queen) ?? matchingMoves[0];
+        var piece = SelectedPiece;
+        var capturedPiece = GetCapturedPieceVisualForMove(piece, from, to);
+
+        ClearHighlights();
+
+        if (capturedPiece != null)
+            RemovePieceVisual(capturedPiece);
+
         _boardState.MakeMove(selectedMove);
-        RefreshPiecesFromBoardState();
+        ApplyPostMoveVisualState(piece, selectedMove);
+
         SelectedPiece = null;
         return true;
     }
@@ -393,6 +612,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
+        var to = new Square(file, rank);
         var moves = _boardState.GenerateLegalMovesFor(from);
 
         var selectedMove = moves.FirstOrDefault(m =>
@@ -403,8 +623,17 @@ public sealed class Board3DViewModel
         if (selectedMove == null)
             return false;
 
+        var piece = SelectedPiece;
+        var capturedPiece = GetCapturedPieceVisualForMove(piece, from, to);
+
+        ClearHighlights();
+
+        if (capturedPiece != null)
+            RemovePieceVisual(capturedPiece);
+
         _boardState.MakeMove(selectedMove);
-        RefreshPiecesFromBoardState();
+        ApplyPostMoveVisualState(piece, selectedMove);
+
         SelectedPiece = null;
         return true;
     }
@@ -415,6 +644,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
+        var to = new Square(file, rank);
         var moves = _boardState.GenerateLegalMovesFor(from);
 
         var selectedMove = moves.FirstOrDefault(m =>
@@ -426,16 +656,31 @@ public sealed class Board3DViewModel
             return false;
 
         var piece = SelectedPiece;
+        var capturedPiece = GetCapturedPieceVisualForMove(piece, from, to);
 
         ClearHighlights();
+        _isAnimatingMove = true;
 
-        AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
+        void StartMoveAnimation()
         {
-            _boardState.MakeMove(selectedMove);
-            RefreshPiecesFromBoardState();
-            SelectedPiece = null;
-            onCompleted?.Invoke();
-        });
+            AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
+            {
+                _boardState.MakeMove(selectedMove);
+                ApplyPostMoveVisualState(piece, selectedMove);
+                SelectedPiece = null;
+                _isAnimatingMove = false;
+                onCompleted?.Invoke();
+            });
+        }
+
+        if (capturedPiece != null)
+        {
+            FadeOutPiece(capturedPiece, 120, StartMoveAnimation);
+        }
+        else
+        {
+            StartMoveAnimation();
+        }
 
         return true;
     }
@@ -446,6 +691,7 @@ public sealed class Board3DViewModel
             return false;
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
+        var to = new Square(file, rank);
         var moves = _boardState.GenerateLegalMovesFor(from);
 
         var selectedMove = moves.FirstOrDefault(m =>
@@ -457,16 +703,31 @@ public sealed class Board3DViewModel
             return false;
 
         var piece = SelectedPiece;
+        var capturedPiece = GetCapturedPieceVisualForMove(piece, from, to);
 
         ClearHighlights();
+        _isAnimatingMove = true;
 
-        AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
+        void StartMoveAnimation()
         {
-            _boardState.MakeMove(selectedMove);
-            RefreshPiecesFromBoardState();
-            SelectedPiece = null;
-            onCompleted?.Invoke();
-        });
+            AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
+            {
+                _boardState.MakeMove(selectedMove);
+                ApplyPostMoveVisualState(piece, selectedMove);
+                SelectedPiece = null;
+                _isAnimatingMove = false;
+                onCompleted?.Invoke();
+            });
+        }
+
+        if (capturedPiece != null)
+        {
+            FadeOutPiece(capturedPiece, 120, StartMoveAnimation);
+        }
+        else
+        {
+            StartMoveAnimation();
+        }
 
         return true;
     }
@@ -540,5 +801,20 @@ public sealed class Board3DViewModel
             Material = material,
             BackMaterial = material
         };
+    }
+
+    public void ResetBoard(BoardState newState)
+    {
+        if (newState == null)
+            throw new ArgumentNullException(nameof(newState));
+
+        _isAnimatingMove = false;
+
+        ClearHighlights();
+        SelectedPiece = null;
+
+        _boardState = newState;
+
+        RefreshPiecesFromBoardState();
     }
 }
