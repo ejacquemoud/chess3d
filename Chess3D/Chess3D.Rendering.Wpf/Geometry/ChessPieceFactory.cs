@@ -20,14 +20,12 @@ public static class ChessPieceFactory
 
         return type switch
         {
-            //PieceType.Pawn => CreatePawn(c, pieceColor),
             PieceType.Pawn => CreatePawnFromObj(c, pieceColor),
-            //PieceType.Rook => CreateRook(c, pieceColor),
             PieceType.Rook => CreateRookFromObj(c, pieceColor),
-            PieceType.Knight => CreateKnight(c, pieceColor),
-            PieceType.Bishop => CreateBishop(c, pieceColor),
-            PieceType.Queen => CreateQueen(c, pieceColor),
-            PieceType.King => CreateKing(c, pieceColor),
+            PieceType.Knight => CreateKnightFromObj(c, pieceColor),
+            PieceType.Bishop => CreateBishopFromObj(c, pieceColor),
+            PieceType.Queen => CreateQueenFromObj(c, pieceColor),
+            PieceType.King => CreateKingFromObj(c, pieceColor),
             _ => new List<GeometryModel3D>()
         };
     }
@@ -732,7 +730,7 @@ public static class ChessPieceFactory
             baseCenter,
             color,
             scale: 0.42,
-            offsetX: -1.86,
+            offsetX: -0.38,
             rotateY: 180);
     }
 
@@ -743,7 +741,7 @@ public static class ChessPieceFactory
             baseCenter,
             color,
             scale: 0.42,
-            offsetX: -1.86,
+            offsetX: 0.37,
             rotateY: 180);
     }
 
@@ -754,7 +752,7 @@ public static class ChessPieceFactory
             baseCenter,
             color,
             scale: 0.42,
-            offsetX: -1.86,
+            offsetX: 1.12,
             rotateY: 180);
     }
 
@@ -765,7 +763,7 @@ public static class ChessPieceFactory
             baseCenter,
             color,
             scale: 0.42,
-            offsetX: -1.86,
+            offsetX: 1.86,
             rotateY: 180);
     }
 }
