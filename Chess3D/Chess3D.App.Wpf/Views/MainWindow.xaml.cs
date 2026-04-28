@@ -231,7 +231,7 @@ public partial class MainWindow : Window
 
         RefreshStatusBar(statusMessage);
 
-        Dispatcher.BeginInvoke(() =>
+        _ = Dispatcher.BeginInvoke(() =>
         {
             if (!_isGameOver)
                 UpdateCameraAfterMove();
@@ -325,7 +325,7 @@ public partial class MainWindow : Window
                 UpdateSelectionText("Aucune sélection");
                 RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
 
-                Dispatcher.BeginInvoke(() =>
+                _ = Dispatcher.BeginInvoke(() =>
                 {
                     if (ShowGameStateIfNeeded())
                         return;
@@ -361,7 +361,7 @@ public partial class MainWindow : Window
                 UpdateSelectionText("Aucune sélection");
                 RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
 
-                Dispatcher.BeginInvoke(() =>
+                _ = Dispatcher.BeginInvoke(() =>
                 {
                     if (ShowGameStateIfNeeded())
                         return;

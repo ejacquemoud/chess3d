@@ -1,9 +1,10 @@
 ﻿<Window x:Class="Chess3D.App.Wpf.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:nav="clr-namespace:System.Windows.Navigation;assembly=PresentationFramework"
         Title="À propos"
         Width="520"
-        Height="384"
+        Height="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowStyle="ToolWindow"
@@ -51,6 +52,11 @@
         <Style x:Key="FooterTextStyle" TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
             <Setter Property="FontSize" Value="12.5" />
+        </Style>
+
+        <Style TargetType="{x:Type Hyperlink}">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+            <Setter Property="TextDecorations" Value="{x:Static TextDecorations.Underline}" />
         </Style>
 
         <Style TargetType="{x:Type Button}">
@@ -112,7 +118,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="16" />
-                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
                     <RowDefinition Height="16" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -134,11 +140,13 @@
                             VerticalAlignment="Top">
                         <Grid>
                             <Image x:Name="AppIconImage"
-                                   Width="28"
-                                   Height="28"
-                                   Stretch="Uniform"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" />
+                               Width="36"
+                               Height="36"
+                               Stretch="Uniform"
+                               SnapsToDevicePixels="True"
+                               UseLayoutRounding="True"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
                         </Grid>
                     </Border>
 
@@ -166,28 +174,58 @@
                 </Grid>
 
                 <!-- Description -->
+                <!-- Description -->
                 <Border Grid.Row="2"
-                        Background="{StaticResource PanelBrush}"
-                        BorderBrush="{StaticResource PanelBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="14"
-                        Padding="16">
-                    <TextBlock TextWrapping="Wrap"
-                               LineHeight="22"
-                               Style="{StaticResource CaptionTextStyle}">
-                        Chess 3D est une application d'échecs avec affichage 3D intégral, partie locale et jeu contre le CPU via Stockfish (10 niveaux de difficulté).
-                        L'application est gratuite et open-source 😊
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="14"
+                    Padding="16">
+                                <TextBlock TextWrapping="Wrap"
+                           LineHeight="20"
+                           Style="{StaticResource CaptionTextStyle}">
+                    <Run Text="Chess 3D est une application d'échecs avec affichage 3D intégral, partie locale et jeu contre le CPU via Stockfish (10 niveaux de difficulté)." />
+                    <LineBreak />
+                    <LineBreak />
+
+                    <Run Text="L'application est gratuite et open-source 😊" />
+                    <LineBreak />
+                    <LineBreak />
+
+                    <Run Text="Crédits :" />
+                    <LineBreak />
+
+                    <Run Text="• Code source : " />
+                    <Hyperlink NavigateUri="https://github.com/ejacquemoud/chess3d"
+                               RequestNavigate="Hyperlink_RequestNavigate">
+                        <Run Text="GitHub" />
+                    </Hyperlink>
+                    <LineBreak />
+
+                    <Run Text="• Modèles 3D : " />
+                    <Hyperlink NavigateUri="https://sketchfab.com/3d-models/realistic-3d-chess-pieces-blender-fbb81d5dc8854f41b6e2db6673daefb3"
+                               RequestNavigate="Hyperlink_RequestNavigate">
+                        <Run Text="Realistic 3D Chess Pieces" />
+                    </Hyperlink>
+                    <Run Text=" — CC Attribution" />
+                    <LineBreak />
+
+                    <Run Text="• Moteur CPU : " />
+                    <Hyperlink NavigateUri="https://stockfishchess.org"
+                               RequestNavigate="Hyperlink_RequestNavigate">
+                        <Run Text="Stockfish" />
+                    </Hyperlink>
                     </TextBlock>
                 </Border>
 
                 <!-- Footer intégré -->
                 <Border Grid.Row="4"
-                    Margin="0"
-                    Background="{StaticResource PanelBrush}"
-                    BorderBrush="{StaticResource PanelBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="12"
-                    Padding="12,10">
+                        Margin="0"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource PanelBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="12,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -196,15 +234,15 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
-                            Text="© 2026 Etienne Jacquemoud"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource FooterTextStyle}" />
+                                   Text="© 2026 Etienne Jacquemoud"
+                                   VerticalAlignment="Center"
+                                   Style="{StaticResource FooterTextStyle}" />
 
                         <Button Grid.Column="2"
-                            Width="112"
-                            HorizontalAlignment="Right"
-                            Click="CloseButton_Click"
-                            Content="Fermer" />
+                                Width="112"
+                                HorizontalAlignment="Right"
+                                Click="CloseButton_Click"
+                                Content="Fermer" />
                     </Grid>
                 </Border>
             </Grid>

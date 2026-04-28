@@ -61,14 +61,41 @@ public partial class AboutWindow : Window
         if (!File.Exists(iconPath))
             return;
 
-        var bitmap = new BitmapImage();
-        bitmap.BeginInit();
-        bitmap.UriSource = new Uri(iconPath, UriKind.Absolute);
-        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.EndInit();
-        bitmap.Freeze();
+        BitmapFrame? bestFrame;
 
-        AppIconImage.Source = bitmap;
+        using (var stream = File.OpenRead(iconPath))
+        {
+            var decoder = BitmapDecoder.Create(
+                stream,
+                BitmapCreateOptions.PreservePixelFormat,
+                BitmapCacheOption.OnLoad);
+
+            bestFrame =
+                decoder.Frames
+                       .Where(f => f.PixelWidth >= 28 && f.PixelHeight >= 28)
+                       .OrderBy(f => f.PixelWidth)
+                       .FirstOrDefault()
+                ?? decoder.Frames
+                          .OrderByDescending(f => f.PixelWidth)
+                          .FirstOrDefault();
+        }
+
+        if (bestFrame == null)
+            return;
+
+        bestFrame.Freeze();
+        AppIconImage.Source = bestFrame;
+    }
+
+    private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = e.Uri.AbsoluteUri,
+            UseShellExecute = true
+        });
+
+        e.Handled = true;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)
