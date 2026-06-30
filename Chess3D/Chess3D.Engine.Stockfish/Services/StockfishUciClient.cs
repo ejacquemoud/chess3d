@@ -19,7 +19,7 @@ namespace Chess3D.Engine.Stockfish.Services
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             if (!File.Exists(_enginePath))
-                throw new FileNotFoundException("Exécutable Stockfish introuvable.", _enginePath);
+                throw new FileNotFoundException("Exï¿½cutable Stockfish introuvable.", _enginePath);
 
             _process = new Process
             {
@@ -56,7 +56,7 @@ namespace Chess3D.Engine.Stockfish.Services
         public async Task<Move> GetBestMoveAsync(string fen, int level, CancellationToken cancellationToken = default)
         {
             if (_output is null)
-                throw new InvalidOperationException("Le moteur n'est pas initialisé.");
+                throw new InvalidOperationException("Le moteur n'est pas initialisï¿½.");
 
             await SendAsync($"position fen {fen}");
             var moveTimeMs = MapLevel(level);
@@ -64,7 +64,9 @@ namespace Chess3D.Engine.Stockfish.Services
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var line = await _output!.ReadLineAsync();
+                var line = await _output!.ReadLineAsync(cancellationToken);
+                if (line is null)
+                    throw new EndOfStreamException("Stockfish s'est terminÃ© de faÃ§on inattendue.");
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
@@ -81,7 +83,7 @@ namespace Chess3D.Engine.Stockfish.Services
         private async Task SendAsync(string command)
         {
             if (_input is null)
-                throw new InvalidOperationException("Le moteur n'est pas initialisé.");
+                throw new InvalidOperationException("Le moteur n'est pas initialisï¿½.");
 
             await _input.WriteLineAsync(command);
             await _input.FlushAsync();
@@ -91,8 +93,10 @@ namespace Chess3D.Engine.Stockfish.Services
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var line = await _output!.ReadLineAsync();
-                if (line is not null && line.Contains(token, StringComparison.OrdinalIgnoreCase))
+                var line = await _output!.ReadLineAsync(cancellationToken);
+                if (line is null)
+                    throw new EndOfStreamException("Stockfish s'est terminÃ© de faÃ§on inattendue.");
+                if (line.Contains(token, StringComparison.OrdinalIgnoreCase))
                     return;
             }
 

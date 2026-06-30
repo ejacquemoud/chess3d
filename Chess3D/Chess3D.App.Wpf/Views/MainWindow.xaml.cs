@@ -87,9 +87,20 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        await InitializeStockfishAsync();
-        RefreshStatusBar();
-        await TryPlayCpuMoveAsync();
+        try
+        {
+            await InitializeStockfishAsync();
+            RefreshStatusBar();
+            await TryPlayCpuMoveAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Erreur au démarrage : {ex.Message}",
+                "Erreur",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private async void MainWindow_Closed(object? sender, EventArgs e)
@@ -98,7 +109,10 @@ public partial class MainWindow : Window
         _cpuCts?.Dispose();
 
         if (_stockfishClient is not null)
-            await _stockfishClient.DisposeAsync();
+        {
+            try { await _stockfishClient.DisposeAsync(); }
+            catch { }
+        }
     }
 
     private async Task InitializeStockfishAsync()
@@ -242,6 +256,8 @@ public partial class MainWindow : Window
 
     private void FinalizeCpuMoveUi(string uci)
     {
+        _isCpuThinking = false;
+
         UpdateSelectionText("Aucune sélection");
 
         if (ShowGameStateIfNeeded())
@@ -311,6 +327,8 @@ public partial class MainWindow : Window
         _cpuCts?.Dispose();
         _cpuCts = new CancellationTokenSource();
 
+        bool animationStarted = false;
+
         try
         {
             string fen = _boardState.ToFen();
@@ -354,21 +372,24 @@ public partial class MainWindow : Window
                     () => FinalizeCpuMoveUi(cpuMove.ToUci()));
             }
 
-            if (!movePlayed)
+            if (movePlayed)
             {
-                _boardState.MakeMove(cpuMove);
-                _boardViewModel.RefreshPiecesFromBoardState();
-                UpdateSelectionText("Aucune sélection");
-                RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
-
-                _ = Dispatcher.BeginInvoke(() =>
-                {
-                    if (ShowGameStateIfNeeded())
-                        return;
-
-                    UpdateCameraAfterMove();
-                }, DispatcherPriority.Background);
+                animationStarted = true;
+                return;
             }
+
+            _boardState.MakeMove(cpuMove);
+            _boardViewModel.RefreshPiecesFromBoardState();
+            UpdateSelectionText("Aucune sélection");
+            RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
+
+            _ = Dispatcher.BeginInvoke(() =>
+            {
+                if (ShowGameStateIfNeeded())
+                    return;
+
+                UpdateCameraAfterMove();
+            }, DispatcherPriority.Background);
         }
         catch (OperationCanceledException)
         {
@@ -385,8 +406,11 @@ public partial class MainWindow : Window
         }
         finally
         {
-            _isCpuThinking = false;
-            RefreshStatusBar();
+            if (!animationStarted)
+            {
+                _isCpuThinking = false;
+                RefreshStatusBar();
+            }
         }
     }
 

@@ -321,35 +321,19 @@ public sealed class Board3DViewModel
 
     private void RebasePieceToSquare(PieceVisual piece, int newFile, int newRank)
     {
-        ResetPieceTransforms(piece);
-
         foreach (var model in piece.Models)
         {
-            if (model is not GeometryModel3D geometryModel)
-                continue;
-
-            Point3D newCenter = GetSquareCenter(newFile, newRank);
-            var material = geometryModel.Material;
-            var backMaterial = geometryModel.BackMaterial;
-
-            Scene.Children.Remove(geometryModel);
-            _modelToPiece.Remove(geometryModel);
-
-            var recreatedModels = ChessPieceFactory.CreatePieceModels(piece.PieceType, piece.PieceColor, newCenter);
-            foreach (var recreated in recreatedModels)
-            {
-                piece.Models.Add(recreated);
-                _modelToPiece[recreated] = piece;
-                Scene.Children.Add(recreated);
-            }
-
-            break;
+            Scene.Children.Remove(model);
+            _modelToPiece.Remove(model);
         }
+        piece.Models.Clear();
 
-        foreach (var oldModel in piece.Models.ToList())
+        Point3D newCenter = GetSquareCenter(newFile, newRank);
+        foreach (var model in ChessPieceFactory.CreatePieceModels(piece.PieceType, piece.PieceColor, newCenter))
         {
-            if (!_modelToPiece.ContainsKey(oldModel))
-                piece.Models.Remove(oldModel);
+            piece.Models.Add(model);
+            _modelToPiece[model] = piece;
+            Scene.Children.Add(model);
         }
 
         piece.File = newFile;
@@ -393,7 +377,7 @@ public sealed class Board3DViewModel
     {
         if (material is DiffuseMaterial dm && dm.Brush is SolidColorBrush existing)
         {
-            var brush = existing.IsFrozen ? existing.Clone() : existing.Clone();
+            var brush = existing.Clone();
             brush.Opacity = 1.0;
             return brush;
         }

@@ -4,8 +4,8 @@ namespace Chess3D.Core.Models
 {
     public sealed class Piece
     {
-        public PieceType Type { get; set; }
-        public PieceColor Color { get; set; }
+        public PieceType Type { get; }
+        public PieceColor Color { get; }
 
         public Piece(PieceType type, PieceColor color)
         {

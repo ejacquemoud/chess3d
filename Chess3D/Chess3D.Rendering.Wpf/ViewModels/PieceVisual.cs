@@ -12,7 +12,6 @@ public sealed class PieceVisual
     public int Rank { get; set; }
 
     public List<Model3D> Models { get; } = new();
-    public List<TranslateTransform3D> TranslateTransforms { get; } = new();
 
     public bool IsAnimating { get; set; }
 }
