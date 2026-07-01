@@ -1,6 +1,7 @@
 ﻿using Chess3D.App.Wpf.Helpers;
 using Chess3D.App.Wpf.Services;
 using Chess3D.Core.Enums;
+using Chess3D.Core.Interfaces;
 using Chess3D.Core.Models;
 using Chess3D.Engine.Stockfish.Services;
 using Chess3D.Rendering.Wpf.ViewModels;
@@ -29,7 +30,7 @@ public partial class MainWindow : Window
     private BoardState _boardState;
     private Board3DViewModel _boardViewModel;
 
-    private StockfishUciClient? _stockfishClient;
+    private IChessEngine? _chessEngine;
     private CancellationTokenSource? _cpuCts;
     private bool _isCpuThinking;
     private bool _isGameOver;
@@ -108,9 +109,9 @@ public partial class MainWindow : Window
         _cpuCts?.Cancel();
         _cpuCts?.Dispose();
 
-        if (_stockfishClient is not null)
+        if (_chessEngine is IAsyncDisposable disposable)
         {
-            try { await _stockfishClient.DisposeAsync(); }
+            try { await disposable.DisposeAsync(); }
             catch { }
         }
     }
@@ -120,7 +121,7 @@ public partial class MainWindow : Window
         if (!_playVsCpu)
             return;
 
-        if (_stockfishClient is not null)
+        if (_chessEngine is not null)
             return;
 
         string enginePath = Path.Combine(AppContext.BaseDirectory, "engines", "stockfish.exe");
@@ -140,9 +141,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        _stockfishClient = new StockfishUciClient(enginePath);
-        await _stockfishClient.InitializeAsync();
-        await _stockfishClient.NewGameAsync();
+        _chessEngine = new StockfishUciClient(enginePath);
+        await _chessEngine.InitializeAsync();
+        await _chessEngine.NewGameAsync();
     }
 
     private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -238,6 +239,8 @@ public partial class MainWindow : Window
 
     private async Task AfterAnimatedMoveAsync(string statusMessage)
     {
+        _boardState.RecordCurrentPosition();
+
         UpdateSelectionText("Aucune sélection");
 
         if (ShowGameStateIfNeeded())
@@ -257,6 +260,7 @@ public partial class MainWindow : Window
     private void FinalizeCpuMoveUi(string uci)
     {
         _isCpuThinking = false;
+        _boardState.RecordCurrentPosition();
 
         UpdateSelectionText("Aucune sélection");
 
@@ -303,6 +307,24 @@ public partial class MainWindow : Window
                 }.ShowDialog();
                 return true;
 
+            case GameEndState.FiftyMoveRule:
+                _isGameOver = true;
+                RefreshStatusBar("Règle des 50 coups — partie nulle");
+                new GameEndDialog("Fin de partie", "Règle des 50 coups !\n\nLa partie est nulle.")
+                {
+                    Owner = this
+                }.ShowDialog();
+                return true;
+
+            case GameEndState.Threefold:
+                _isGameOver = true;
+                RefreshStatusBar("Triple répétition — partie nulle");
+                new GameEndDialog("Fin de partie", "Triple répétition !\n\nLa partie est nulle.")
+                {
+                    Owner = this
+                }.ShowDialog();
+                return true;
+
             case GameEndState.None:
             default:
                 return false;
@@ -311,7 +333,7 @@ public partial class MainWindow : Window
 
     private async Task TryPlayCpuMoveAsync()
     {
-        if (!_playVsCpu || _stockfishClient is null)
+        if (!_playVsCpu || _chessEngine is null)
             return;
 
         if (_isGameOver || _isCpuThinking)
@@ -332,13 +354,14 @@ public partial class MainWindow : Window
         try
         {
             string fen = _boardState.ToFen();
-            Move cpuMove = await _stockfishClient.GetBestMoveAsync(fen, _cpuLevel, _cpuCts.Token);
+            Move cpuMove = await _chessEngine.GetBestMoveAsync(fen, _cpuLevel, _cpuCts.Token);
 
             bool sourceSelected = _boardViewModel.TrySelectPieceAt(cpuMove.From.File, cpuMove.From.Rank);
 
             if (!sourceSelected)
             {
                 _boardState.MakeMove(cpuMove);
+                _boardState.RecordCurrentPosition();
                 _boardViewModel.RefreshPiecesFromBoardState();
                 UpdateSelectionText("Aucune sélection");
                 RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
@@ -379,6 +402,7 @@ public partial class MainWindow : Window
             }
 
             _boardState.MakeMove(cpuMove);
+            _boardState.RecordCurrentPosition();
             _boardViewModel.RefreshPiecesFromBoardState();
             UpdateSelectionText("Aucune sélection");
             RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
@@ -428,14 +452,14 @@ public partial class MainWindow : Window
         _isCpuThinking = false;
         _isGameOver = false;
 
-        _boardState = BoardState.CreateInitial();
+        _boardState = BoardState.CreateInitial();  // RecordCurrentPosition est appelé dans CreateInitial
         _boardViewModel.ResetBoard(_boardState);
 
         ResetCameraForCurrentMode();
         UpdateSelectionText("Aucune sélection");
 
-        if (_stockfishClient is not null)
-            await _stockfishClient.NewGameAsync();
+        if (_chessEngine is not null)
+            await _chessEngine.NewGameAsync();
 
         UpdateMenuChecks();
         RefreshStatusBar();
