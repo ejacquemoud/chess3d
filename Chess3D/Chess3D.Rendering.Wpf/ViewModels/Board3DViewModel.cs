@@ -24,6 +24,7 @@ public sealed class Board3DViewModel
 
     private GeometryModel3D? _selectionHighlight;
     private bool _isAnimatingMove;
+    private IReadOnlyList<Move>? _cachedLegalMoves;
 
     public PieceVisual? SelectedPiece { get; private set; }
     public List<(int file, int rank)> CurrentMoves { get; } = new();
@@ -48,11 +49,20 @@ public sealed class Board3DViewModel
         group.Children.Add(new DirectionalLight(Color.FromRgb(110, 125, 150), new Vector3D(1.0, -0.8, 1.4)));
         group.Children.Add(new DirectionalLight(Color.FromRgb(70, 70, 80), new Vector3D(0.2, -1.0, -1.8)));
 
-        var darkSquare = Color.FromRgb(181, 136, 99);
-        var lightSquare = Color.FromRgb(240, 217, 181);
-        var boardBase = Color.FromRgb(70, 45, 30);
+        var baseMaterial = CreateSurfaceMaterial(
+            Color.FromRgb(70, 45, 30),
+            Color.FromArgb(120, 180, 130, 90), 35,
+            Color.FromArgb(5, 60, 40, 20));
+        group.Children.Add(CreateBox(new Point3D(0, -0.25, 0), 8.8, 0.5, 8.8, baseMaterial));
 
-        group.Children.Add(CreateBox(new Point3D(0, -0.25, 0), 8.8, 0.5, 8.8, boardBase));
+        var lightMaterial = CreateSurfaceMaterial(
+            Color.FromRgb(240, 217, 181),
+            Color.FromArgb(180, 255, 252, 240), 80,
+            Color.FromArgb(10, 255, 244, 220));
+        var darkMaterial = CreateSurfaceMaterial(
+            Color.FromRgb(181, 136, 99),
+            Color.FromArgb(160, 220, 180, 130), 55,
+            Color.FromArgb(8, 120, 80, 40));
 
         for (int rank = 0; rank < 8; rank++)
         {
@@ -67,10 +77,20 @@ public sealed class Board3DViewModel
                     TileSize,
                     TileHeight,
                     TileSize,
-                    isLight ? lightSquare : darkSquare));
+                    isLight ? lightMaterial : darkMaterial));
             }
         }
 
+        return group;
+    }
+
+    private static Material CreateSurfaceMaterial(Color diffuse, Color specular, double specularPower, Color emissive)
+    {
+        var group = new MaterialGroup();
+        group.Children.Add(new DiffuseMaterial(new SolidColorBrush(diffuse)));
+        group.Children.Add(new SpecularMaterial(new SolidColorBrush(specular), specularPower));
+        group.Children.Add(new EmissiveMaterial(new SolidColorBrush(emissive)));
+        group.Freeze();
         return group;
     }
 
@@ -102,6 +122,7 @@ public sealed class Board3DViewModel
         _pieces.Clear();
         _modelToPiece.Clear();
         SelectedPiece = null;
+        _cachedLegalMoves = null;
     }
 
     private void AddPieceVisual(WpfPieceType type, WpfPieceColor color, int file, int rank)
@@ -158,10 +179,20 @@ public sealed class Board3DViewModel
         if (moves.Count == 0)
             return false;
 
+        _cachedLegalMoves = moves;
         SelectedPiece = piece;
         HighlightSquare(piece.File, piece.Rank);
         ShowMoves(moves.Select(m => (m.To.File, m.To.Rank)));
         return true;
+    }
+
+    private IReadOnlyList<Move> GetOrComputeLegalMoves()
+    {
+        if (SelectedPiece == null) return Array.Empty<Move>();
+        if (_cachedLegalMoves != null) return _cachedLegalMoves;
+        var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
+        _cachedLegalMoves = _boardState.GenerateLegalMovesFor(from);
+        return _cachedLegalMoves;
     }
 
     public bool TryGetSquareFromHit(Point3D hitPoint, out int file, out int rank)
@@ -227,6 +258,7 @@ public sealed class Board3DViewModel
 
         ClearMoveHighlights();
         CurrentMoves.Clear();
+        _cachedLegalMoves = null;
     }
 
     private void ClearMoveHighlights()
@@ -447,10 +479,23 @@ public sealed class Board3DViewModel
         }
     }
 
+    private void TryAnimateCastlingRook(PieceVisual kingPiece, Square from, Square to)
+    {
+        var rookVisual = GetRookVisualForCastlingBeforeMove(kingPiece, from, to);
+        if (rookVisual == null) return;
+
+        int rookFromFile = to.File > from.File ? 7 : 0;
+        int rookToFile = to.File > from.File ? 5 : 3;
+        AnimatePieceToSquare(rookVisual, rookFromFile, from.Rank, rookToFile, from.Rank, null);
+    }
+
     private void AnimatePieceToSquare(PieceVisual piece, int fromFile, int fromRank, int toFile, int toRank, Action? completed)
     {
         if (piece.IsAnimating)
+        {
+            completed?.Invoke();
             return;
+        }
 
         piece.IsAnimating = true;
 
@@ -568,7 +613,7 @@ public sealed class Board3DViewModel
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
         var to = new Square(file, rank);
-        var moves = _boardState.GenerateLegalMovesFor(from);
+        var moves = GetOrComputeLegalMoves();
 
         var matchingMoves = moves.Where(m => m.To.File == file && m.To.Rank == rank).ToList();
         if (matchingMoves.Count == 0)
@@ -597,7 +642,7 @@ public sealed class Board3DViewModel
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
         var to = new Square(file, rank);
-        var moves = _boardState.GenerateLegalMovesFor(from);
+        var moves = GetOrComputeLegalMoves();
 
         var selectedMove = moves.FirstOrDefault(m =>
             m.To.File == file &&
@@ -629,7 +674,7 @@ public sealed class Board3DViewModel
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
         var to = new Square(file, rank);
-        var moves = _boardState.GenerateLegalMovesFor(from);
+        var moves = GetOrComputeLegalMoves();
 
         var selectedMove = moves.FirstOrDefault(m =>
             m.To.File == file &&
@@ -647,6 +692,8 @@ public sealed class Board3DViewModel
 
         void StartMoveAnimation()
         {
+            TryAnimateCastlingRook(piece, from, to);
+
             AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
             {
                 _boardState.MakeMove(selectedMove);
@@ -676,7 +723,7 @@ public sealed class Board3DViewModel
 
         var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
         var to = new Square(file, rank);
-        var moves = _boardState.GenerateLegalMovesFor(from);
+        var moves = GetOrComputeLegalMoves();
 
         var selectedMove = moves.FirstOrDefault(m =>
             m.To.File == file &&
@@ -694,6 +741,8 @@ public sealed class Board3DViewModel
 
         void StartMoveAnimation()
         {
+            TryAnimateCastlingRook(piece, from, to);
+
             AnimatePieceToSquare(piece, from.File, from.Rank, file, rank, () =>
             {
                 _boardState.MakeMove(selectedMove);
@@ -721,8 +770,7 @@ public sealed class Board3DViewModel
         if (SelectedPiece == null || _isAnimatingMove)
             return false;
 
-        var from = new Square(SelectedPiece.File, SelectedPiece.Rank);
-        var moves = _boardState.GenerateLegalMovesFor(from);
+        var moves = GetOrComputeLegalMoves();
 
         return moves.Any(m =>
             m.To.File == file &&
@@ -750,6 +798,11 @@ public sealed class Board3DViewModel
 
     private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Color color)
     {
+        return CreateBox(center, sizeX, sizeY, sizeZ, (Material)new DiffuseMaterial(new SolidColorBrush(color)));
+    }
+
+    private static GeometryModel3D CreateBox(Point3D center, double sizeX, double sizeY, double sizeZ, Material material)
+    {
         double hx = sizeX / 2.0;
         double hy = sizeY / 2.0;
         double hz = sizeZ / 2.0;
@@ -776,8 +829,6 @@ public sealed class Board3DViewModel
                 0,1,5, 0,5,4
             }
         };
-
-        var material = new DiffuseMaterial(new SolidColorBrush(color));
 
         return new GeometryModel3D
         {

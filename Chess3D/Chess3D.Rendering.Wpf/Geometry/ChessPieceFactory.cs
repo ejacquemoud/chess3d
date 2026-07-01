@@ -14,6 +14,8 @@ public static class ChessPieceFactory
     private const int SphereSlices = 28;
     private const int SphereStacks = 18;
 
+    private static readonly Dictionary<string, Model3D> _objCache = new();
+
     public static List<GeometryModel3D> CreatePieceModels(PieceType type, PieceColor pieceColor, Point3D baseCenter)
     {
         var c = new Point3D(baseCenter.X, baseCenter.Y + PieceLift, baseCenter.Z);
@@ -647,12 +649,13 @@ public static class ChessPieceFactory
             AppContext.BaseDirectory,
             "Assets", "Models", "Chess", objFileName);
 
-        var importer = new ModelImporter
+        if (!_objCache.TryGetValue(fullPath, out var loaded))
         {
-            DefaultMaterial = CreatePieceMaterial(color)
-        };
+            var importer = new ModelImporter();
+            loaded = importer.Load(fullPath);
+            _objCache[fullPath] = loaded;
+        }
 
-        var loaded = importer.Load(fullPath);
         var result = new List<GeometryModel3D>();
 
         void Collect(Model3D model)

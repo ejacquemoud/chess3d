@@ -8,12 +8,15 @@ public enum GameEndState
     None = 0,
     Check,
     Checkmate,
-    Stalemate
+    Stalemate,
+    FiftyMoveRule,
+    Threefold,
 }
 
 public sealed class BoardState
 {
     private readonly Piece?[,] _board = new Piece?[8, 8];
+    private readonly Dictionary<string, int> _positionOccurrences = new();
 
     public PieceColor SideToMove { get; private set; } = PieceColor.White;
 
@@ -134,10 +137,35 @@ public sealed class BoardState
         if (!inCheck && !hasAnyLegalMove)
             return GameEndState.Stalemate;
 
+        if (HalfmoveClock >= 100)
+            return GameEndState.FiftyMoveRule;
+
+        if (IsThreefoldRepetition())
+            return GameEndState.Threefold;
+
         if (inCheck)
             return GameEndState.Check;
 
         return GameEndState.None;
+    }
+
+    public void RecordCurrentPosition()
+    {
+        var key = ToPositionKey();
+        _positionOccurrences[key] = _positionOccurrences.GetValueOrDefault(key) + 1;
+    }
+
+    public bool IsThreefoldRepetition()
+    {
+        return _positionOccurrences.GetValueOrDefault(ToPositionKey()) >= 3;
+    }
+
+    private string ToPositionKey()
+    {
+        var fen = ToFen();
+        int last = fen.LastIndexOf(' ');
+        int secondLast = fen.LastIndexOf(' ', last - 1);
+        return fen[..secondLast];
     }
 
     public void MakeMove(Move move)
@@ -150,8 +178,6 @@ public sealed class BoardState
         bool isPawnMove = piece.Type == PieceType.Pawn;
         bool isCapture = targetPiece != null;
         bool isEnPassant = false;
-        bool isCastling = false;
-
         if (isPawnMove && EnPassantTargetSquare.HasValue && move.To == EnPassantTargetSquare.Value && move.From.File != move.To.File && targetPiece == null)
         {
             isEnPassant = true;
@@ -164,10 +190,7 @@ public sealed class BoardState
         UpdateCastlingRightsBeforeMove(piece, move, targetPiece);
 
         if (piece.Type == PieceType.King && Math.Abs(move.To.File - move.From.File) == 2)
-        {
-            isCastling = true;
             ApplyCastlingRookMove(piece.Color, move);
-        }
 
         SetPiece(move.From, null);
 
@@ -271,6 +294,7 @@ public sealed class BoardState
         for (int file = 0; file < 8; file++)
             board.SetPiece(new Square(file, 6), new Piece(PieceType.Pawn, PieceColor.Black));
 
+        board.RecordCurrentPosition();
         return board;
     }
 
@@ -491,35 +515,73 @@ public sealed class BoardState
         return true;
     }
 
-    private bool IsSquareAttacked(Square targetSquare, PieceColor attackingColor)
+    private bool IsSquareAttacked(Square target, PieceColor attacker)
     {
-        foreach (var (from, piece) in GetOccupiedSquares())
+        int pawnDir = attacker == PieceColor.White ? 1 : -1;
+        foreach (int df in new[] { -1, 1 })
         {
-            if (piece.Color != attackingColor)
-                continue;
-
-            if (piece.Type == PieceType.Pawn)
+            var sq = new Square(target.File + df, target.Rank - pawnDir);
+            if (IsInside(sq))
             {
-                int direction = attackingColor == PieceColor.White ? 1 : -1;
-                if (from.Rank + direction == targetSquare.Rank && Math.Abs(from.File - targetSquare.File) == 1)
-                    return true;
-
-                continue;
-            }
-
-            if (piece.Type == PieceType.King)
-            {
-                if (Math.Abs(from.File - targetSquare.File) <= 1 && Math.Abs(from.Rank - targetSquare.Rank) <= 1)
-                    return true;
-
-                continue;
-            }
-
-            foreach (var move in GeneratePseudoLegalMovesForIgnoringTurn(from, piece, includeCastling: false))
-            {
-                if (move.To == targetSquare)
+                var p = GetPiece(sq);
+                if (p != null && p.Color == attacker && p.Type == PieceType.Pawn)
                     return true;
             }
+        }
+
+        foreach (var (df, dr) in new (int, int)[]
+        {
+            (1, 2), (2, 1), (2, -1), (1, -2),
+            (-1, -2), (-2, -1), (-2, 1), (-1, 2)
+        })
+        {
+            var sq = new Square(target.File + df, target.Rank + dr);
+            if (IsInside(sq))
+            {
+                var p = GetPiece(sq);
+                if (p != null && p.Color == attacker && p.Type == PieceType.Knight)
+                    return true;
+            }
+        }
+
+        for (int df = -1; df <= 1; df++)
+            for (int dr = -1; dr <= 1; dr++)
+            {
+                if (df == 0 && dr == 0) continue;
+                var sq = new Square(target.File + df, target.Rank + dr);
+                if (IsInside(sq))
+                {
+                    var p = GetPiece(sq);
+                    if (p != null && p.Color == attacker && p.Type == PieceType.King)
+                        return true;
+                }
+            }
+
+        if (IsAttackedByRay(target, attacker,  1,  0, PieceType.Rook))   return true;
+        if (IsAttackedByRay(target, attacker, -1,  0, PieceType.Rook))   return true;
+        if (IsAttackedByRay(target, attacker,  0,  1, PieceType.Rook))   return true;
+        if (IsAttackedByRay(target, attacker,  0, -1, PieceType.Rook))   return true;
+        if (IsAttackedByRay(target, attacker,  1,  1, PieceType.Bishop)) return true;
+        if (IsAttackedByRay(target, attacker,  1, -1, PieceType.Bishop)) return true;
+        if (IsAttackedByRay(target, attacker, -1,  1, PieceType.Bishop)) return true;
+        if (IsAttackedByRay(target, attacker, -1, -1, PieceType.Bishop)) return true;
+
+        return false;
+    }
+
+    private bool IsAttackedByRay(Square target, PieceColor attacker, int df, int dr, PieceType slidingType)
+    {
+        int file = target.File + df;
+        int rank = target.Rank + dr;
+
+        while (file >= 0 && file < 8 && rank >= 0 && rank < 8)
+        {
+            var piece = _board[file, rank];
+            if (piece != null)
+                return piece.Color == attacker && (piece.Type == slidingType || piece.Type == PieceType.Queen);
+
+            file += df;
+            rank += dr;
         }
 
         return false;

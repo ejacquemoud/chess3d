@@ -51,40 +51,33 @@ public partial class AboutWindow : Window
 
     private void AboutWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        if (Icon is ImageSource imageSource)
-        {
-            AppIconImage.Source = imageSource;
-            return;
-        }
-
         var iconPath = Path.Combine(AppContext.BaseDirectory, "Chess.ico");
-        if (!File.Exists(iconPath))
-            return;
-
-        BitmapFrame? bestFrame;
-
-        using (var stream = File.OpenRead(iconPath))
+        if (File.Exists(iconPath))
         {
-            var decoder = BitmapDecoder.Create(
-                stream,
-                BitmapCreateOptions.PreservePixelFormat,
-                BitmapCacheOption.OnLoad);
+            BitmapFrame? bestFrame;
+            using (var stream = File.OpenRead(iconPath))
+            {
+                var decoder = BitmapDecoder.Create(
+                    stream,
+                    BitmapCreateOptions.PreservePixelFormat,
+                    BitmapCacheOption.OnLoad);
 
-            bestFrame =
-                decoder.Frames
-                       .Where(f => f.PixelWidth >= 28 && f.PixelHeight >= 28)
-                       .OrderBy(f => f.PixelWidth)
-                       .FirstOrDefault()
-                ?? decoder.Frames
-                          .OrderByDescending(f => f.PixelWidth)
-                          .FirstOrDefault();
+                // Largest frame → WPF downscales cleanly, no upscaling blur
+                bestFrame = decoder.Frames
+                    .OrderByDescending(f => f.PixelWidth)
+                    .FirstOrDefault();
+            }
+
+            if (bestFrame != null)
+            {
+                bestFrame.Freeze();
+                AppIconImage.Source = bestFrame;
+                return;
+            }
         }
 
-        if (bestFrame == null)
-            return;
-
-        bestFrame.Freeze();
-        AppIconImage.Source = bestFrame;
+        if (Icon is ImageSource imageSource)
+            AppIconImage.Source = imageSource;
     }
 
     private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)

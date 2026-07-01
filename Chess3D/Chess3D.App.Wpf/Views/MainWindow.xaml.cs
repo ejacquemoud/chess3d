@@ -1,6 +1,7 @@
 ﻿using Chess3D.App.Wpf.Helpers;
 using Chess3D.App.Wpf.Services;
 using Chess3D.Core.Enums;
+using Chess3D.Core.Interfaces;
 using Chess3D.Core.Models;
 using Chess3D.Engine.Stockfish.Services;
 using Chess3D.Rendering.Wpf.ViewModels;
@@ -29,7 +30,7 @@ public partial class MainWindow : Window
     private BoardState _boardState;
     private Board3DViewModel _boardViewModel;
 
-    private StockfishUciClient? _stockfishClient;
+    private IChessEngine? _chessEngine;
     private CancellationTokenSource? _cpuCts;
     private bool _isCpuThinking;
     private bool _isGameOver;
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
     private PieceColor _humanColor = PieceColor.White;
 
     private bool _isCpuAvailable = true;
+    private bool _isLoading;
 
     public MainWindow()
     {
@@ -108,9 +110,9 @@ public partial class MainWindow : Window
         _cpuCts?.Cancel();
         _cpuCts?.Dispose();
 
-        if (_stockfishClient is not null)
+        if (_chessEngine is IAsyncDisposable disposable)
         {
-            try { await _stockfishClient.DisposeAsync(); }
+            try { await disposable.DisposeAsync(); }
             catch { }
         }
     }
@@ -120,7 +122,7 @@ public partial class MainWindow : Window
         if (!_playVsCpu)
             return;
 
-        if (_stockfishClient is not null)
+        if (_chessEngine is not null)
             return;
 
         string enginePath = Path.Combine(AppContext.BaseDirectory, "engines", "stockfish.exe");
@@ -140,9 +142,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        _stockfishClient = new StockfishUciClient(enginePath);
-        await _stockfishClient.InitializeAsync();
-        await _stockfishClient.NewGameAsync();
+        _chessEngine = new StockfishUciClient(enginePath);
+        await _chessEngine.InitializeAsync();
+        await _chessEngine.NewGameAsync();
     }
 
     private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -238,6 +240,8 @@ public partial class MainWindow : Window
 
     private async Task AfterAnimatedMoveAsync(string statusMessage)
     {
+        _boardState.RecordCurrentPosition();
+
         UpdateSelectionText("Aucune sélection");
 
         if (ShowGameStateIfNeeded())
@@ -257,6 +261,7 @@ public partial class MainWindow : Window
     private void FinalizeCpuMoveUi(string uci)
     {
         _isCpuThinking = false;
+        _boardState.RecordCurrentPosition();
 
         UpdateSelectionText("Aucune sélection");
 
@@ -303,6 +308,24 @@ public partial class MainWindow : Window
                 }.ShowDialog();
                 return true;
 
+            case GameEndState.FiftyMoveRule:
+                _isGameOver = true;
+                RefreshStatusBar("Règle des 50 coups — partie nulle");
+                new GameEndDialog("Fin de partie", "Règle des 50 coups !\n\nLa partie est nulle.")
+                {
+                    Owner = this
+                }.ShowDialog();
+                return true;
+
+            case GameEndState.Threefold:
+                _isGameOver = true;
+                RefreshStatusBar("Triple répétition — partie nulle");
+                new GameEndDialog("Fin de partie", "Triple répétition !\n\nLa partie est nulle.")
+                {
+                    Owner = this
+                }.ShowDialog();
+                return true;
+
             case GameEndState.None:
             default:
                 return false;
@@ -311,7 +334,7 @@ public partial class MainWindow : Window
 
     private async Task TryPlayCpuMoveAsync()
     {
-        if (!_playVsCpu || _stockfishClient is null)
+        if (!_playVsCpu || _chessEngine is null)
             return;
 
         if (_isGameOver || _isCpuThinking)
@@ -332,13 +355,14 @@ public partial class MainWindow : Window
         try
         {
             string fen = _boardState.ToFen();
-            Move cpuMove = await _stockfishClient.GetBestMoveAsync(fen, _cpuLevel, _cpuCts.Token);
+            Move cpuMove = await _chessEngine.GetBestMoveAsync(fen, _cpuLevel, _cpuCts.Token);
 
             bool sourceSelected = _boardViewModel.TrySelectPieceAt(cpuMove.From.File, cpuMove.From.Rank);
 
             if (!sourceSelected)
             {
                 _boardState.MakeMove(cpuMove);
+                _boardState.RecordCurrentPosition();
                 _boardViewModel.RefreshPiecesFromBoardState();
                 UpdateSelectionText("Aucune sélection");
                 RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
@@ -379,6 +403,7 @@ public partial class MainWindow : Window
             }
 
             _boardState.MakeMove(cpuMove);
+            _boardState.RecordCurrentPosition();
             _boardViewModel.RefreshPiecesFromBoardState();
             UpdateSelectionText("Aucune sélection");
             RefreshStatusBar($"CPU joue {cpuMove.ToUci()}");
@@ -416,29 +441,42 @@ public partial class MainWindow : Window
 
     private async void NewGame_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         await StartNewGameAsync();
     }
 
     private async Task StartNewGameAsync()
     {
-        _cpuCts?.Cancel();
-        _cpuCts?.Dispose();
-        _cpuCts = null;
+        if (_isLoading) return;
+        _isLoading = true;
+        RefreshStatusBar("Chargement...");
 
-        _isCpuThinking = false;
-        _isGameOver = false;
+        try
+        {
+            _cpuCts?.Cancel();
+            _cpuCts?.Dispose();
+            _cpuCts = null;
 
-        _boardState = BoardState.CreateInitial();
-        _boardViewModel.ResetBoard(_boardState);
+            _isCpuThinking = false;
+            _isGameOver = false;
 
-        ResetCameraForCurrentMode();
-        UpdateSelectionText("Aucune sélection");
+            _boardState = BoardState.CreateInitial();
+            _boardViewModel.ResetBoard(_boardState);
 
-        if (_stockfishClient is not null)
-            await _stockfishClient.NewGameAsync();
+            ResetCameraForCurrentMode();
+            UpdateSelectionText("Aucune sélection");
 
-        UpdateMenuChecks();
-        RefreshStatusBar();
+            if (_chessEngine is not null)
+                await _chessEngine.NewGameAsync();
+
+            UpdateMenuChecks();
+            RefreshStatusBar();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
         await TryPlayCpuMoveAsync();
     }
 
@@ -563,6 +601,7 @@ public partial class MainWindow : Window
 
     private async void VersusCpuMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _playVsCpu = true;
         await InitializeStockfishAsync();
 
@@ -580,6 +619,7 @@ public partial class MainWindow : Window
 
     private async void LocalTwoPlayersMenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _playVsCpu = false;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -587,9 +627,7 @@ public partial class MainWindow : Window
 
     private async void PlayWhiteMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (!_playVsCpu)
-            return;
-
+        if (!_playVsCpu || _isLoading) return;
         _humanColor = PieceColor.White;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -597,9 +635,7 @@ public partial class MainWindow : Window
 
     private async void PlayBlackMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        if (!_playVsCpu)
-            return;
-
+        if (!_playVsCpu || _isLoading) return;
         _humanColor = PieceColor.Black;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -607,6 +643,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel1MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 1;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -614,6 +651,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel2MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 2;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -621,6 +659,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel3MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 3;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -628,6 +667,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel4MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 4;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -635,6 +675,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel5MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 5;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -642,6 +683,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel6MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 6;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -649,6 +691,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel7MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 7;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -656,6 +699,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel8MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 8;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -663,6 +707,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel9MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 9;
         UpdateMenuChecks();
         await StartNewGameAsync();
@@ -670,6 +715,7 @@ public partial class MainWindow : Window
 
     private async void CpuLevel10MenuItem_Click(object sender, RoutedEventArgs e)
     {
+        if (_isLoading) return;
         _cpuLevel = 10;
         UpdateMenuChecks();
         await StartNewGameAsync();
