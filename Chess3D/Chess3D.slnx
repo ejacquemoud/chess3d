@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Chess3D.App.Wpf/Chess3D.App.Wpf.csproj" />
+  <Project Path="Chess3D.Core/Chess3D.Core.csproj" />
+  <Project Path="Chess3D.Engine.Stockfish/Chess3D.Engine.Stockfish.csproj" />
+  <Project Path="Chess3D.Rendering.Wpf/Chess3D.Rendering.Wpf.csproj" />
+</Solution>

@@ -652,7 +652,8 @@ public static class ChessPieceFactory
         if (!_objCache.TryGetValue(fullPath, out var loaded))
         {
             var importer = new ModelImporter();
-            loaded = importer.Load(fullPath);
+            loaded = importer.Load(fullPath)
+                ?? throw new InvalidOperationException($"Impossible de charger le modèle 3D '{fullPath}'.");
             _objCache[fullPath] = loaded;
         }
 
